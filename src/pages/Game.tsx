@@ -752,12 +752,12 @@ export default function Game() {
           audio.sfx('thunder')
         }
 
-        const eSpeed=(3.5+this.level*0.5)*this.speedMult
+        const eSpeed=(2.0+this.level*0.3)*this.speedMult
 
         // Bullets move & hit
         this.bullets.getChildren().forEach((b:any)=>{
           if(!b.active) return
-          b.y-=12
+          b.y-=9
           if(b.y<70){b.destroy();return}
 
           // vs enemies
@@ -808,7 +808,7 @@ export default function Game() {
         // Enemy lasers move
         this.enemyLasers.getChildren().forEach((l:any)=>{
           if(!l.active) return
-          l.y+=8*this.speedMult
+          l.y+=5*this.speedMult
           if(l.y>H+20){l.destroy();return}
           if(Math.abs(l.x-this.player.x)<18&&Math.abs(l.y-this.player.y)<22){
             const f=this.add.circle(l.x,l.y,15,l.col||0xFF2244,0.6)
@@ -830,7 +830,7 @@ export default function Game() {
         // Coins move
         this.coinGroup.getChildren().forEach((c:any)=>{
           if(!c.active) return
-          c.y+=3.5*this.speedMult
+          c.y+=2.2*this.speedMult
           if(c.y>H+30){c.destroy();return}
           if(Math.abs(c.x-this.player.x)<20&&Math.abs(c.y-this.player.y)<25){
             const earned=Math.round(1*coinMult)
