@@ -19,7 +19,26 @@ const MODELS = [
   { name: 'GHOST GOLD',    file: 'model_4_ghost_gold.jpg',    color: '#FFD700' },
 ]
 
-const CHARACTERS: {name:string,file:string}[] = []
+const CHARACTERS = [
+  { name: "AUSD",    file: "AUSD.PNG.jpg" },
+  { name: "BITCOIN", file: "BITCOIN.PNG.jpg" },
+  { name: "DUST",    file: "DUST.PNG.jpg" },
+  { name: "ETH",     file: "ETH.PNG.jpg" },
+  { name: "GIGA",    file: "GIGA.PNG.jpg" },
+  { name: "GMON",    file: "GMON.PNG.jpg" },
+  { name: "MOFU",    file: "MOFU.PNG.jpg" },
+  { name: "MONKA",   file: "MONKA.PNG.jpg" },
+  { name: "MOON",    file: "MOON.PNG.jpg" },
+  { name: "SBITE",   file: "SBITE.PNG.jpg" },
+  { name: "SOLANA",  file: "SOLANA.PNG.jpg" },
+  { name: "USDC",    file: "USDC.PNG.jpeg" },
+  { name: "USDT",    file: "USDT.PNG.jpg" },
+  { name: "WBTC",    file: "WBTC.PNG.jpg" },
+  { name: "WETH",    file: "WETH.PNG.jpg" },
+  { name: "WMON",    file: "WMON.PNG.jpg" },
+  { name: "cbBTC",   file: "cbBTC.PNG.jpg" },
+  { name: "BITCOIN2",file: "BITCOIN.PNG.jpg" },
+]
 
 const RARITIES = ['COMMON', 'RARE', 'EPIC', 'LEGENDARY']
 const RARITY_COLORS: Record<string, string> = {
