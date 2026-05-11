@@ -61,8 +61,6 @@ export default function Mint() {
       }).catch(() => {})
     })
   }, [])
-    const addr = address
-  }, [address])
 
   const handleMint = async () => {
     if (!connected) { connect(); return }
