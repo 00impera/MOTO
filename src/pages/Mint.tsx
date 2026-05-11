@@ -35,8 +35,8 @@ const RARITY_COLORS: Record<string, string> = {
 }
 
 export default function Mint() {
-  const { connected, loading, balanceNFT, balanceMON,
-          connect, mintNFT, toast: toastState } = useWeb3()
+  const { connected, loading, balanceNFT, balanceMON, address,
+          connect, mintNFT, toast: toastState } = useWeb3() as any
 
   const [model,     setModel]     = useState(0)
   const [rarity,    setRarity]    = useState(0)
@@ -44,6 +44,42 @@ export default function Mint() {
   const [busy, setBusy]           = useState(false)
   const [nftInfo, setNftInfo]     = useState<{ supply: string; max: string; price: string } | null>(null)
   const [tab, setTab]             = useState<'model'|'character'>('model')
+
+
+  const [myNFTs, setMyNFTs] = useState<{id:number,image:string,model:number,rarity:number}[]>([])
+  // const [loadingNFTs, setLoadingNFTs] = useState(false)
+
+  const fetchMyNFTs = async (addr: string) => {
+    
+    try {
+      const NFT = '0x6e9E4f12D33aAf4834E6D7f61a3a9EDB5ca97AD1' as `0x\${string}`
+      const { createPublicClient, http, defineChain } = await import('viem')
+      const monad = defineChain({ id: 143, name: 'Monad Mainnet',
+        nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
+        rpcUrls: { default: { http: ['https://rpc.monad.xyz'] } } })
+      const client = createPublicClient({ chain: monad, transport: http('https://rpc.monad.xyz') })
+      const abi = [
+        { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{type:'address'}], outputs: [{type:'uint256'}] },
+        { name: 'tokenOfOwnerByIndex', type: 'function', stateMutability: 'view', inputs: [{type:'address'},{type:'uint256'}], outputs: [{type:'uint256'}] },
+        { name: 'tokenURI', type: 'function', stateMutability: 'view', inputs: [{type:'uint256'}], outputs: [{type:'string'}] },
+        { name: 'traits', type: 'function', stateMutability: 'view', inputs: [{type:'uint256'}], outputs: [{type:'uint8'},{type:'uint8'},{type:'uint8'},{type:'uint8'},{type:'uint16'}] },
+      ] as const
+      const bal = await client.readContract({ address: NFT, abi, functionName: 'balanceOf', args: [addr as `0x\${string}`] }) as bigint
+      const count = Math.min(Number(bal), 12)
+      const nfts = []
+      for (let i = 0; i < count; i++) {
+        const tokenId = await client.readContract({ address: NFT, abi, functionName: 'tokenOfOwnerByIndex', args: [addr as `0x\${string}`, BigInt(i)] }) as bigint
+        const [uri, tr] = await Promise.all([
+          client.readContract({ address: NFT, abi, functionName: 'tokenURI', args: [tokenId] }) as Promise<string>,
+          client.readContract({ address: NFT, abi, functionName: 'traits', args: [tokenId] }) as Promise<readonly [number,number,number,number,number]>,
+        ])
+        const json = JSON.parse(atob(uri.replace('data:application/json;base64,','')))
+        nfts.push({ id: Number(tokenId), image: json.image, model: tr[0], rarity: tr[2] })
+      }
+      setMyNFTs(nfts)
+    } catch(e) { console.warn('fetchMyNFTs', e) }
+    finally {  }
+  }
 
   useEffect(() => {
     import('viem').then(({ createPublicClient, http, formatEther, defineChain }) => {
@@ -66,6 +102,12 @@ export default function Mint() {
       }).catch(() => {})
     })
   }, [])
+
+
+  useEffect(() => {
+    const addr = address
+    if (addr) fetchMyNFTs(addr)
+  }, [address])
 
   const handleMint = async () => {
     if (!connected) { connect(); return }
@@ -291,6 +333,31 @@ export default function Mint() {
             </div>
           </div>
         </div>
+
+        {/* MY NFTs */}
+        {myNFTs.length > 0 && (
+          <div style={{ marginTop: 40 }}>
+            <div style={{ fontFamily: 'Orbitron,monospace', fontSize: 10, color: 'rgba(255,215,0,0.5)', letterSpacing: 3, marginBottom: 16, textAlign: 'center' }}>
+              YOUR NFT COLLECTION ({myNFTs.length})
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
+              {myNFTs.map(nft => {
+                const rc = RARITY_COLORS[RARITIES[nft.rarity]] || '#aaa'
+                return (
+                  <div key={nft.id} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid \${rc}44`, position: 'relative' }}>
+                    <img src={nft.image} alt={`NFT #\${nft.id}`}
+                      style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(5,10,14,0.85) 0%, transparent 50%)' }} />
+                    <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8 }}>
+                      <div style={{ fontFamily: 'Orbitron,monospace', fontSize: 8, color: rc }}>#{nft.id}</div>
+                      <div style={{ fontFamily: 'Orbitron,monospace', fontSize: 7, color: 'rgba(255,255,255,0.4)' }}>{RARITIES[nft.rarity]} · {MODELS[nft.model]?.name}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </>
   )
