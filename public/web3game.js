@@ -1,0 +1,12 @@
+const WEB3_CONFIG = {
+  MOTO_TOKEN:      "0xD49e4A6caEDf6e06C8E520E90518F7cDAcEbBd63",
+  MOTO_NFT:        "0x6e9E4f12D33aAf4834E6D7f61a3a9EDB5ca97AD1",
+  GAME_CONTROLLER: "0x0411Cdf2897214f29426Cb87eF0B5846a71bD751",
+  NFT_BRIDGE:      "0x7480e83eCf8E9164892bc66aeb36Bd86b8528faE",
+  TREASURY:        "0x592B35c8917eD36c39Ef73D0F5e92B0173560b2e",
+  CHAIN_ID:        "0x8f",
+  CHAIN_ID_DEC:    143,
+  RPC:             "https://rpc.monad.xyz",
+};
+window.WEB3_CONFIG = WEB3_CONFIG;
+console.log("✅ web3game.js loaded");
