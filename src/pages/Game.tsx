@@ -1005,7 +1005,7 @@ export default function Game() {
       <div ref={containerRef} style={{border:'1px solid rgba(200,150,12,0.35)',boxShadow:'0 0 40px rgba(57,255,20,0.08)',width:'100%',maxWidth:560,touchAction:'manipulation'}}/>
 
       {/* MOBILE TOUCH CONTROLS */}
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:560,marginTop:10,padding:'0 8px',userSelect:'none'}}>
+      <div style={{display:('ontouchstart' in window)?'flex':'none',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:560,marginTop:10,padding:'0 8px',userSelect:'none'}}>
         <button
           onTouchStart={(ev)=>{ ev.preventDefault(); touchInput.current.left=true }}
           onTouchEnd={(ev)=>{ ev.preventDefault(); touchInput.current.left=false }}
