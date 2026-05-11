@@ -230,7 +230,7 @@ export default function Mint() {
                     boxShadow: character === i ? '0 0 16px rgba(0,234,255,0.4)' : 'none',
                     transition: 'all 0.2s', position: 'relative',
                   }}>
-                    <img src={`${IPFS}/${c.file}`} alt={c.name}
+                    <img src={`/characters/${c.file}`} alt={c.name}
                       style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', objectPosition: 'top', display: 'block' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(5,10,14,0.8) 0%, transparent 60%)' }} />
                     <div style={{ position: 'absolute', bottom: 6, left: 6 }}>
