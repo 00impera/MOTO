@@ -270,6 +270,12 @@ export default function Game() {
       gameOverFlag = false
       paused = false
       shootTimer=0; enemyTimer=0; coinTimer=0; obstTimer=0; laserTimer=0
+      supplyTimer=0
+      shield=false; shieldGfx:any=null
+      magnet=false; magnetTimer=0
+      doubleScore=false; doubleTimer=0
+      combo=0; comboTimer=0; comboText:any=null
+      streak=0
       birdTimer=0; lightningTimer=0
       playerLane=2
       lanes=[80,180,280,380,480]
@@ -312,6 +318,8 @@ export default function Game() {
           this.load.image(`enemy_${e.key}`, `/enemies/${e.key}.PNG.${e.ext}`)
         })
         OBSTACLE_IMGS.forEach(o => this.load.image(o.key, `/obstacles/${o.file}`))
+        this.load.image('supply1', '/obstacles/suplay.png.jpeg')
+        this.load.image('supply2', '/obstacles/suplay2.png.jpeg')
       }
 
       create() {
@@ -641,6 +649,104 @@ export default function Game() {
         this.coinGroup.add(container)
       }
 
+
+      spawnSupplyDrop() {
+        const lane = Phaser.Math.Between(0, 4)
+        const x = this.lanes[lane]
+        const type = Phaser.Math.Between(0, 2) // 0=viata 1=shield 2=magnet
+        const colors = [0x39FF14, 0x00EAFF, 0xa259ff]
+        const col = colors[type]
+        const container = this.add.container(x, -80)
+
+        // Parasuta
+        const chuteGfx = this.add.graphics()
+        // Coarda parasuta
+        chuteGfx.lineStyle(1, 0xFFD700, 0.8)
+        chuteGfx.beginPath()
+        chuteGfx.moveTo(-12, -8); chuteGfx.lineTo(0, 10)
+        chuteGfx.moveTo(12, -8); chuteGfx.lineTo(0, 10)
+        chuteGfx.moveTo(0, -12); chuteGfx.lineTo(0, 10)
+        chuteGfx.strokePath()
+        // Dom parasuta - Gold gradient effect
+        chuteGfx.fillStyle(0xC8960C, 0.9); chuteGfx.fillEllipse(0, -18, 36, 22)
+        chuteGfx.lineStyle(2, 0xFFD700, 1); chuteGfx.strokeEllipse(0, -18, 36, 22)
+        // Stripes pe parasuta
+        chuteGfx.lineStyle(1, col, 0.7)
+        chuteGfx.beginPath()
+        chuteGfx.moveTo(-6, -28); chuteGfx.lineTo(-6, -8)
+        chuteGfx.moveTo(0, -29); chuteGfx.lineTo(0, -8)
+        chuteGfx.moveTo(6, -28); chuteGfx.lineTo(6, -8)
+        chuteGfx.strokePath()
+        // Shimmer pe parasuta
+        chuteGfx.lineStyle(1, 0xFFE566, 0.4); chuteGfx.strokeEllipse(0, -18, 30, 16)
+
+        // Box supply - dark bg
+        const boxBg = this.add.rectangle(0, 14, 28, 24, 0x050A0E, 0.95)
+        boxBg.setStrokeStyle(2, col, 1)
+        // Gold corners
+        const corners = this.add.graphics()
+        corners.lineStyle(2, 0xFFD700, 0.9)
+        corners.beginPath()
+        corners.moveTo(-14, -4); corners.lineTo(-14, -12); corners.lineTo(-6, -12)
+        corners.moveTo(14, -4); corners.lineTo(14, -12); corners.lineTo(6, -12)
+        corners.moveTo(-14, 32); corners.lineTo(-14, 26); corners.lineTo(-6, 26)
+        corners.moveTo(14, 32); corners.lineTo(14, 26); corners.lineTo(6, 26)
+        corners.strokePath()
+        // Supply image
+        const imgKey = Phaser.Math.Between(0,1) === 0 ? 'supply1' : 'supply2'
+        const supImg = this.add.image(0, 14, imgKey).setDisplaySize(22, 20)
+        // Glow ring
+        const glowRing = this.add.graphics()
+        glowRing.lineStyle(3, col, 0.6); glowRing.strokeCircle(0, 14, 18)
+        // Iridescent shimmer
+        const sh1 = this.add.circle(-8, 8, 2, 0xa259ff, 0.7)
+        const sh2 = this.add.circle(8, 8, 2, 0x00eaff, 0.6)
+        const sh3 = this.add.circle(0, 20, 1.5, 0xff6ec7, 0.5)
+
+        container.add([chuteGfx, glowRing, boxBg, corners, supImg, sh1, sh2, sh3])
+        ;(container as any).supplyType = type
+        ;(container as any).isSupply = true
+
+        // Animatii
+        this.tweens.add({targets: glowRing, scaleX:{from:0.8,to:1.3}, scaleY:{from:0.8,to:1.3}, alpha:{from:0.4,to:1}, duration:600, yoyo:true, repeat:-1})
+        this.tweens.add({targets:[sh1,sh2,sh3], alpha:{from:0.2,to:1}, duration:400, yoyo:true, repeat:-1})
+        // Legana parasuta
+        this.tweens.add({targets: container, angle:{from:-5,to:5}, duration:1200, yoyo:true, repeat:-1, ease:'Sine.easeInOut'})
+
+        this.obstacles.add(container)
+      }
+
+
+      activateShield() {
+        if(this.shieldGfx) this.shieldGfx.destroy()
+        const sg = this.add.graphics()
+        sg.lineStyle(3, 0x00EAFF, 0.8); sg.strokeCircle(0, 0, 45)
+        sg.lineStyle(1, 0xa259ff, 0.4); sg.strokeCircle(0, 0, 50)
+        this.player.add(sg)
+        this.shieldGfx = sg
+        this.tweens.add({targets:sg, alpha:{from:0.5,to:1}, duration:400, yoyo:true, repeat:14,
+          onComplete:()=>{ this.shield=false; sg.destroy(); this.shieldGfx=null }})
+        audio.sfx('coin')
+      }
+
+      spawnSupplyEffect(x:number, y:number, type:number) {
+        const cols=[0x39FF14,0x00EAFF,0xa259ff]
+        const col=cols[type]
+        for(let i=0;i<12;i++){
+          const angle=Math.random()*Math.PI*2
+          const speed=60+Math.random()*80
+          const p=this.add.circle(x,y,3+Math.random()*4,col,0.9)
+          this.tweens.add({targets:p,
+            x:x+Math.cos(angle)*speed, y:y+Math.sin(angle)*speed,
+            alpha:0, scaleX:0, scaleY:0, duration:500+Math.random()*300,
+            onComplete:()=>p.destroy()})
+        }
+        // Gold ring burst
+        const ring=this.add.graphics()
+        ring.lineStyle(3,0xFFD700,0.9); ring.strokeCircle(x,y,10)
+        this.tweens.add({targets:ring,scaleX:4,scaleY:4,alpha:0,duration:400,onComplete:()=>ring.destroy()})
+      }
+
       update(_t:number, delta:number) {
         if (this.gameOverFlag) return
         if (this.paused) return
@@ -674,7 +780,7 @@ export default function Game() {
 
         // Auto shoot with colored lasers
         this.shootTimer+=delta
-        const fireRate=Math.max(120,280-this.level*20)
+        const fireRate=Math.max(80,220-this.level*20)
         if(this.shootTimer>fireRate){
           this.shootTimer=0
           audio.sfx('shoot')
@@ -712,7 +818,7 @@ export default function Game() {
 
         // Enemy spawn
         this.enemyTimer+=delta
-        const eInterval=Math.max(300,1200-this.level*80)
+        const eInterval=Math.max(400,2000-this.level*80)
         if(this.enemyTimer>eInterval){ this.enemyTimer=0; this.spawnEnemy(Phaser.Math.Between(0,4)) }
 
         // Obstacle spawn
@@ -724,9 +830,16 @@ export default function Game() {
         this.coinTimer+=delta
         if(this.coinTimer>400){ this.coinTimer=0; this.spawnCoin(Phaser.Math.Between(0,4)) }
 
+        // Supply drop spawn
+        this.supplyTimer+=delta
+        if(this.supplyTimer>Phaser.Math.Between(8000,15000)){
+          this.supplyTimer=0
+          this.spawnSupplyDrop()
+        }
+
         // Enemy lasers
         this.laserTimer+=delta
-        if(this.laserTimer>Math.max(800,2000-this.level*150)){
+        if(this.laserTimer>Math.max(1200,3000-this.level*150)){
           this.laserTimer=0
           this.enemies.getChildren().forEach((e:any)=>{
             if(!e.active||e.y<80||e.y>H-100) return
@@ -756,12 +869,29 @@ export default function Game() {
           audio.sfx('thunder')
         }
 
-        const eSpeed=(2.0+this.level*0.3)*this.speedMult
+        // Combo decay
+        if(this.combo>0){
+          this.comboTimer+=delta
+          if(this.comboTimer>2000){ this.combo=0; this.comboTimer=0 }
+        }
+        // Power-up timers
+        if(this.magnet){ this.magnetTimer-=delta; if(this.magnetTimer<=0){ this.magnet=false } }
+        if(this.doubleScore){ this.doubleTimer-=delta; if(this.doubleTimer<=0){ this.doubleScore=false } }
+
+        const eSpeed=(1.2+this.level*0.18)*this.speedMult
 
         // Bullets move & hit
         this.bullets.getChildren().forEach((b:any)=>{
           if(!b.active) return
           b.y-=9
+          if(this.magnet){
+            this.coinGroup.getChildren().forEach((coin:any)=>{
+              if(!coin.active) return
+              const dx=this.player.x-coin.x, dy=this.player.y-coin.y
+              const dist=Math.sqrt(dx*dx+dy*dy)
+              if(dist<180){ coin.x+=dx*0.08; coin.y+=dy*0.08 }
+            })
+          }
           if(b.y<70){b.destroy();return}
 
           // vs enemies
@@ -777,7 +907,16 @@ export default function Game() {
                 this.spawnExplosion(e.x,e.y)
                 e.destroy()
                 const pts=50*this.level
-                this.score+=pts; setScore(this.score)
+                this.combo=(this.combo||0)+1
+                this.streak=(this.streak||0)+1
+                this.comboTimer=0
+                const bonusMult = this.combo>=5?3:this.combo>=3?2:1
+                const finalPts = pts * bonusMult * (this.doubleScore?2:1)
+                this.score+=finalPts; setScore(this.score)
+                if(this.combo>=3){
+                  const ct=this.add.text(this.player.x,this.player.y-80,`x${this.combo} COMBO! +${finalPts}`,{fontFamily:'Orbitron,monospace',fontSize:'11px',color:'#FFD700',stroke:'#000',strokeThickness:3}).setOrigin(0.5)
+                  this.tweens.add({targets:ct,y:ct.y-50,alpha:0,duration:900,onComplete:()=>ct.destroy()})
+                }
                 this.scoreText.setText('SCORE: '+this.score)
                 audio.sfx('hit')
                 const t=this.add.text(e.x,e.y-20,`+${pts}`,{fontFamily:'Orbitron,monospace',fontSize:'11px',color:'#FFD700',stroke:'#000',strokeThickness:2}).setOrigin(0.5)
@@ -808,6 +947,13 @@ export default function Game() {
             this.spawnExplosion(e.x,e.y); e.destroy(); this.takeDamage()
           }
         })
+
+        // Supply drop spawn
+        this.supplyTimer+=delta
+        if(this.supplyTimer>Phaser.Math.Between(8000,15000)){
+          this.supplyTimer=0
+          this.spawnSupplyDrop()
+        }
 
         // Enemy lasers move
         this.enemyLasers.getChildren().forEach((l:any)=>{
