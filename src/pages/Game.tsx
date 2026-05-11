@@ -999,6 +999,24 @@ export default function Game() {
         <button onClick={stopGame} className="cl-btn cl-btn-ghost" style={{fontSize:8,padding:'4px 10px'}}>EXIT</button>
       </div>
       <div ref={containerRef} style={{border:'1px solid rgba(200,150,12,0.35)',boxShadow:'0 0 40px rgba(57,255,20,0.08)',width:'100%',maxWidth:560,touchAction:'manipulation'}}/>
+
+      {/* MOBILE TOUCH CONTROLS */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:560,marginTop:10,padding:'0 8px',userSelect:'none'}}>
+        <button
+          onTouchStart={()=>{ const e=new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}); document.dispatchEvent(e) }}
+          onTouchEnd={()=>{ const e=new KeyboardEvent('keyup',{key:'ArrowLeft',bubbles:true}); document.dispatchEvent(e) }}
+          style={{width:72,height:72,borderRadius:'50%',background:'rgba(0,234,255,0.1)',border:'2px solid rgba(0,234,255,0.5)',color:'#00EAFF',fontSize:28,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',boxShadow:'0 0 16px rgba(0,234,255,0.2)',touchAction:'manipulation'}}
+        >⬅️</button>
+        <button
+          onTouchStart={()=>{ const e=new KeyboardEvent('keydown',{key:'p',bubbles:true}); document.dispatchEvent(e) }}
+          style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,215,0,0.08)',border:'2px solid rgba(255,215,0,0.3)',color:'#FFD700',fontSize:18,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',touchAction:'manipulation'}}
+        >⏸</button>
+        <button
+          onTouchStart={()=>{ const e=new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}); document.dispatchEvent(e) }}
+          onTouchEnd={()=>{ const e=new KeyboardEvent('keyup',{key:'ArrowRight',bubbles:true}); document.dispatchEvent(e) }}
+          style={{width:72,height:72,borderRadius:'50%',background:'rgba(0,234,255,0.1)',border:'2px solid rgba(0,234,255,0.5)',color:'#00EAFF',fontSize:28,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',boxShadow:'0 0 16px rgba(0,234,255,0.2)',touchAction:'manipulation'}}
+        >➡️</button>
+      </div>
     </div>
   )
 }
