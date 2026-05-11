@@ -320,6 +320,16 @@ export default function Game() {
         OBSTACLE_IMGS.forEach(o => this.load.image(o.key, `/obstacles/${o.file}`))
         this.load.image('supply1', '/obstacles/suplay.png.jpeg')
         this.load.image('supply2', '/obstacles/suplay2.png.jpeg')
+        this.load.image('parasuta', '/obstacles/parasuta.jpeg')
+        this.load.image('body', '/cars/body.jpeg')
+        this.load.image('wheel_fl', '/cars/wheel_fl.jpeg')
+        this.load.image('wheel_fr', '/cars/wheel_fr.jpeg')
+        this.load.image('wheel_rl', '/cars/wheel_rl.jpeg')
+        this.load.image('wheel_rr', '/cars/wheel_rr.jpeg')
+        this.load.image('machinegun', '/obstacles/machinegun.png.jpg')
+        this.load.image('laser_gun', '/obstacles/laser.png.jpg')
+        this.load.image('rocket_gun', '/obstacles/rocket.png.jpg')
+        this.load.image('plasma_gun', '/obstacles/plasma.png.jpg')
       }
 
       create() {
@@ -381,25 +391,41 @@ export default function Game() {
         this.player = this.add.container(this.lanes[this.playerLane], H-90)
         // Underbody glow
         const underGlow=this.add.ellipse(0,42,90,24,0x00EAFF,0.35)
-        // Car image clipped in a shaped mask
-        const carImg=this.add.image(0,0,'car')
-        carImg.setDisplaySize(65,100)
-        // Holographic overlay
+        // MASINA COMPOZITA: body + 4 roti animate
+        const bodyImg = this.add.image(0, -5, 'body')
+        bodyImg.setDisplaySize(72, 110)
+        // Roți față
+        const wFL = this.add.image(-32, -38, 'wheel_fl')
+        wFL.setDisplaySize(28, 28)
+        const wFR = this.add.image(32, -38, 'wheel_fr')
+        wFR.setDisplaySize(28, 28)
+        // Roți spate
+        const wRL = this.add.image(-32, 38, 'wheel_rl')
+        wRL.setDisplaySize(28, 28)
+        const wRR = this.add.image(32, 38, 'wheel_rr')
+        wRR.setDisplaySize(28, 28)
+        // Spin roti continuu
+        this.tweens.add({targets:[wFL,wFR,wRL,wRR], angle:360, duration:300, repeat:-1, ease:'Linear'})
+        // Engine glow sub masina
+        const engGlow=this.add.circle(0, 52, 14, 0x39FF14, 0.7)
+        this.tweens.add({targets:engGlow,alpha:{from:0.3,to:1},scaleX:{from:0.8,to:1.3},scaleY:{from:0.8,to:1.3},duration:200,yoyo:true,repeat:-1})
+        // Glow iridescent pe body
         const holoGfx=this.add.graphics()
-        holoGfx.lineStyle(1,0x00EAFF,0.3); holoGfx.strokeRect(-26,-40,52,80)
-        holoGfx.lineStyle(1,0xa259ff,0.15); holoGfx.strokeRect(-22,-36,44,72)
-        // Engine glow
-        const engGlow=this.add.circle(0,42,12,0x39FF14,0.7)
-        this.tweens.add({targets:engGlow,alpha:{from:0.4,to:1},scaleX:{from:0.8,to:1.3},scaleY:{from:0.8,to:1.3},duration:200,yoyo:true,repeat:-1})
-        // Speed lines
+        holoGfx.lineStyle(2,0x00EAFF,0.25); holoGfx.strokeRect(-36,-55,72,110)
+        holoGfx.lineStyle(1,0xa259ff,0.15); holoGfx.strokeRect(-30,-50,60,100)
+        // Speed lines deasupra
         const spd=this.add.graphics()
-        spd.lineStyle(1,0x00EAFF,0.4); spd.beginPath()
-        spd.moveTo(-22,-42); spd.lineTo(-22,-60)
-        spd.moveTo(22,-42); spd.lineTo(22,-60)
-        spd.moveTo(-10,-42); spd.lineTo(-10,-70)
-        spd.moveTo(10,-42); spd.lineTo(10,-70)
+        spd.lineStyle(1,0x39FF14,0.5); spd.beginPath()
+        spd.moveTo(-20,-58); spd.lineTo(-20,-78)
+        spd.moveTo(20,-58); spd.lineTo(20,-78)
+        spd.moveTo(-8,-58); spd.lineTo(-8,-85)
+        spd.moveTo(8,-58); spd.lineTo(8,-85)
         spd.strokePath()
-        this.player.add([underGlow,carImg,holoGfx,engGlow,spd])
+        // MITRALIERA pe masina
+        const gunImg = this.add.image(0, -55, 'machinegun')
+        gunImg.setDisplaySize(22, 28)
+        gunImg.setTint(0xFFD700)
+        this.player.add([underGlow, wFL, wFR, wRL, wRR, bodyImg, holoGfx, engGlow, spd, gunImg])
 
         // ── Character portrait (3D framed) ──────────────────────────────────
         const cpx=W-48, cpy=H-70
@@ -658,27 +684,20 @@ export default function Game() {
         const col = colors[type]
         const container = this.add.container(x, -80)
 
-        // Parasuta
+        // Parasuta imagine reala
+        const chuteImg = this.add.image(0, -45, 'parasuta')
+        chuteImg.setDisplaySize(70, 65)
+        // Glow pe parasuta
+        const chuteGlow = this.add.graphics()
+        chuteGlow.lineStyle(2, 0xFFD700, 0.6); chuteGlow.strokeEllipse(0, -45, 72, 50)
+        // Corzi de la parasuta la box
         const chuteGfx = this.add.graphics()
-        // Coarda parasuta
-        chuteGfx.lineStyle(1, 0xFFD700, 0.8)
+        chuteGfx.lineStyle(1, 0x39FF14, 0.8)
         chuteGfx.beginPath()
-        chuteGfx.moveTo(-12, -8); chuteGfx.lineTo(0, 10)
-        chuteGfx.moveTo(12, -8); chuteGfx.lineTo(0, 10)
-        chuteGfx.moveTo(0, -12); chuteGfx.lineTo(0, 10)
+        chuteGfx.moveTo(-20, -20); chuteGfx.lineTo(0, 10)
+        chuteGfx.moveTo(20, -20); chuteGfx.lineTo(0, 10)
+        chuteGfx.moveTo(0, -18); chuteGfx.lineTo(0, 10)
         chuteGfx.strokePath()
-        // Dom parasuta - Gold gradient effect
-        chuteGfx.fillStyle(0xC8960C, 0.9); chuteGfx.fillEllipse(0, -18, 36, 22)
-        chuteGfx.lineStyle(2, 0xFFD700, 1); chuteGfx.strokeEllipse(0, -18, 36, 22)
-        // Stripes pe parasuta
-        chuteGfx.lineStyle(1, col, 0.7)
-        chuteGfx.beginPath()
-        chuteGfx.moveTo(-6, -28); chuteGfx.lineTo(-6, -8)
-        chuteGfx.moveTo(0, -29); chuteGfx.lineTo(0, -8)
-        chuteGfx.moveTo(6, -28); chuteGfx.lineTo(6, -8)
-        chuteGfx.strokePath()
-        // Shimmer pe parasuta
-        chuteGfx.lineStyle(1, 0xFFE566, 0.4); chuteGfx.strokeEllipse(0, -18, 30, 16)
 
         // Box supply - dark bg
         const boxBg = this.add.rectangle(0, 14, 28, 24, 0x050A0E, 0.95)
@@ -703,7 +722,7 @@ export default function Game() {
         const sh2 = this.add.circle(8, 8, 2, 0x00eaff, 0.6)
         const sh3 = this.add.circle(0, 20, 1.5, 0xff6ec7, 0.5)
 
-        container.add([chuteGfx, glowRing, boxBg, corners, supImg, sh1, sh2, sh3])
+        container.add([chuteImg, chuteGlow, chuteGfx, glowRing, boxBg, corners, supImg, sh1, sh2, sh3])
         ;(container as any).supplyType = type
         ;(container as any).isSupply = true
 
@@ -788,10 +807,15 @@ export default function Game() {
           // Main bullet
           const b=this.add.container(this.player.x,this.player.y-55)
           const bGfx=this.add.graphics()
-          bGfx.fillStyle(col,1); bGfx.fillRect(-3,-10,6,20)
-          // Glow tip
-          const bTip=this.add.circle(0,-10,5,col,0.6)
-          b.add([bGfx,bTip]);(b as any).col=col;(b as any).dmg=1
+          // Glont mitraliera - forma realista
+          bGfx.fillStyle(0xFFE566,1); bGfx.fillEllipse(0,-14,5,10)
+          bGfx.fillStyle(0xC8960C,1); bGfx.fillRect(-2,-10,4,12)
+          bGfx.fillStyle(0xB8860B,1); bGfx.fillRect(-2,2,4,4)
+          // Glow portocaliu
+          const bTip=this.add.circle(0,-14,4,0xFFD700,0.8)
+          const bTrail=this.add.graphics()
+          bTrail.lineStyle(2,col,0.4); bTrail.beginPath(); bTrail.moveTo(0,0); bTrail.lineTo(0,16); bTrail.strokePath()
+          b.add([bTrail,bGfx,bTip]);(b as any).col=col;(b as any).dmg=1
           this.bullets.add(b)
           // Glow burst at gun
           const burst=this.add.circle(this.player.x,this.player.y-55,8,col,0.5)
@@ -802,8 +826,12 @@ export default function Game() {
             cols.forEach((c,idx)=>{
               const offset=idx===0?-20:20
               const b2=this.add.container(this.player.x+offset,this.player.y-42)
-              const g2=this.add.graphics(); g2.fillStyle(c,1); g2.fillRect(-2,-8,4,16)
-              b2.add([g2]);(b2 as any).col=c;(b2 as any).dmg=1
+              const g2=this.add.graphics()
+              g2.fillStyle(0xFFE566,1); g2.fillEllipse(0,-10,4,8)
+              g2.fillStyle(c,1); g2.fillRect(-2,-8,4,14)
+              const t2=this.add.circle(0,-10,3,c,0.9)
+              const trail2=this.add.graphics(); trail2.lineStyle(2,c,0.3); trail2.beginPath(); trail2.moveTo(0,0); trail2.lineTo(0,12); trail2.strokePath()
+              b2.add([trail2,g2,t2]);(b2 as any).col=c;(b2 as any).dmg=1
               this.bullets.add(b2)
             })
           }
