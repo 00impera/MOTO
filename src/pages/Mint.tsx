@@ -154,7 +154,7 @@ export default function Mint() {
                   <span style={{ padding: '3px 10px', borderRadius: 999, border: `1px solid ${rarityColor}55`,
                     fontFamily: 'Orbitron,monospace', fontSize: 7, color: rarityColor }}>{RARITIES[rarity]}</span>
                   <span style={{ padding: '3px 10px', borderRadius: 999, border: '1px solid rgba(0,234,255,0.4)',
-                    fontFamily: 'Orbitron,monospace', fontSize: 7, color: '#00EAFF' }}>{currentChar.name}</span>
+                    fontFamily: 'Orbitron,monospace', fontSize: 7, color: '#00EAFF' }}>{currentChar?.name}</span>
                 </div>
               </div>
               <div style={{ position: 'absolute', top: 12, right: 12, padding: '4px 12px', borderRadius: 999,
@@ -166,12 +166,12 @@ export default function Mint() {
 
             {/* CHARACTER IMAGE from IPFS */}
             <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(0,234,255,0.2)', position: 'relative' }}>
-              <img src={`${IPFS}/${currentChar.file}`} alt={currentChar.name}
+              <img src={`/characters/${currentChar?.file}`} alt={currentChar?.name}
                 style={{ width: '100%', aspectRatio: '16/7', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
                 onError={e => { (e.target as HTMLImageElement).src = '/characters/char_1.jpg' }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(5,10,14,0.8) 0%, transparent 60%)' }} />
               <div style={{ position: 'absolute', bottom: 10, left: 14 }}>
-                <div style={{ fontFamily: 'Orbitron,monospace', fontSize: 11, color: '#00EAFF' }}>{currentChar.name}</div>
+                <div style={{ fontFamily: 'Orbitron,monospace', fontSize: 11, color: '#00EAFF' }}>{currentChar?.name}</div>
               </div>
             </div>
 
