@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useWeb3 } from '../hooks/useWeb3'
 import { Web3Toast } from '../components/Web3HUD'
 
-const IPFS = 'https://ipfs.io/ipfs/bafybeidclxrggnikudbcc6gpgc4h2q247crste727v2hjkgeoktf7e55gi'
 
 const btn: React.CSSProperties = {
   fontFamily: 'Orbitron,monospace', fontSize: 11, fontWeight: 700,
