@@ -372,16 +372,16 @@ export default function Game() {
         // ── Player car — NO flat photo, composite visual ─────────────────────
         this.player = this.add.container(this.lanes[this.playerLane], H-90)
         // Underbody glow
-        const underGlow=this.add.ellipse(0,36,72,20,0x00EAFF,0.25)
+        const underGlow=this.add.ellipse(0,42,90,24,0x00EAFF,0.35)
         // Car image clipped in a shaped mask
         const carImg=this.add.image(0,0,'car')
-        carImg.setDisplaySize(50,78)
+        carImg.setDisplaySize(65,100)
         // Holographic overlay
         const holoGfx=this.add.graphics()
         holoGfx.lineStyle(1,0x00EAFF,0.3); holoGfx.strokeRect(-26,-40,52,80)
         holoGfx.lineStyle(1,0xa259ff,0.15); holoGfx.strokeRect(-22,-36,44,72)
         // Engine glow
-        const engGlow=this.add.circle(0,32,8,0x39FF14,0.7)
+        const engGlow=this.add.circle(0,42,12,0x39FF14,0.7)
         this.tweens.add({targets:engGlow,alpha:{from:0.4,to:1},scaleX:{from:0.8,to:1.3},scaleY:{from:0.8,to:1.3},duration:200,yoyo:true,repeat:-1})
         // Speed lines
         const spd=this.add.graphics()
@@ -668,6 +668,9 @@ export default function Game() {
         }
         if(touchInput.current.pause){ touchInput.current.pause=false; this.togglePause() }
         this.player.x=Phaser.Math.Linear(this.player.x,this.lanes[this.playerLane],0.15)
+        // Tilt based on movement direction
+        const targetTilt = this.player.x < this.lanes[this.playerLane] ? 0.15 : this.player.x > this.lanes[this.playerLane] ? -0.15 : 0
+        this.player.rotation = Phaser.Math.Linear(this.player.rotation, targetTilt, 0.1)
 
         // Auto shoot with colored lasers
         this.shootTimer+=delta
