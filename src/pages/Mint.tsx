@@ -61,9 +61,6 @@ export default function Mint() {
       }).catch(() => {})
     })
   }, [])
-
-
-  useEffect(() => {
     const addr = address
   }, [address])
 
