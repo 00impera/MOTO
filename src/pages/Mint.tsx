@@ -73,7 +73,7 @@ export default function Mint() {
           client.readContract({ address: NFT, abi, functionName: 'tokenURI', args: [tokenId] }) as Promise<string>,
           client.readContract({ address: NFT, abi, functionName: 'traits', args: [tokenId] }) as Promise<readonly [number,number,number,number,number]>,
         ])
-        const json = JSON.parse(atob(uri.replace('data:application/json;base64,','')))
+        const b64 = uri.replace("data:application/json;base64,",""); const json = JSON.parse(decodeURIComponent(escape(atob(b64))))
         nfts.push({ id: Number(tokenId), image: json.image, model: tr[0], rarity: tr[2] })
       }
       setMyNFTs(nfts)
