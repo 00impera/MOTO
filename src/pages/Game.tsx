@@ -222,6 +222,7 @@ class AudioEngine {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Game() {
   const gameRef      = useRef<Phaser.Game|null>(null)
+  const touchInput    = useRef<{left:boolean,right:boolean,pause:boolean}>({left:false,right:false,pause:false})
   const audioRef     = useRef<AudioEngine|null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [selChar, setSelChar] = useState(0)
@@ -656,12 +657,15 @@ export default function Game() {
         }
 
         // Player movement
-        if(Phaser.Input.Keyboard.JustDown(this.cursors.left!)||Phaser.Input.Keyboard.JustDown(this.wasd.A)){
+        if(Phaser.Input.Keyboard.JustDown(this.cursors.left!)||Phaser.Input.Keyboard.JustDown(this.wasd.A)||touchInput.current.left){
           if(this.playerLane>0) this.playerLane--
+          touchInput.current.left=false
         }
-        if(Phaser.Input.Keyboard.JustDown(this.cursors.right!)||Phaser.Input.Keyboard.JustDown(this.wasd.D)){
+        if(Phaser.Input.Keyboard.JustDown(this.cursors.right!)||Phaser.Input.Keyboard.JustDown(this.wasd.D)||touchInput.current.right){
           if(this.playerLane<4) this.playerLane++
+          touchInput.current.right=false
         }
+        if(touchInput.current.pause){ touchInput.current.pause=false; togglePause() }
         this.player.x=Phaser.Math.Linear(this.player.x,this.lanes[this.playerLane],0.15)
 
         // Auto shoot with colored lasers
@@ -1003,17 +1007,17 @@ export default function Game() {
       {/* MOBILE TOUCH CONTROLS */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:560,marginTop:10,padding:'0 8px',userSelect:'none'}}>
         <button
-          onTouchStart={(ev)=>{ ev.preventDefault(); const c=containerRef.current?.querySelector('canvas'); const t=c||window; t.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',keyCode:37,which:37,bubbles:true})); window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',keyCode:37,which:37,bubbles:true})) }}
-          onTouchEnd={(ev)=>{ ev.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup',{key:'ArrowLeft',keyCode:37,bubbles:true})) }}
+          onTouchStart={(ev)=>{ ev.preventDefault(); touchInput.current.left=true }}
+          onTouchEnd={(ev)=>{ ev.preventDefault(); touchInput.current.left=false }}
           style={{width:72,height:72,borderRadius:'50%',background:'rgba(0,234,255,0.15)',border:'2px solid rgba(0,234,255,0.6)',color:'#00EAFF',fontSize:28,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',boxShadow:'0 0 16px rgba(0,234,255,0.3)',touchAction:'manipulation'}}
         >⬅️</button>
         <button
-          onTouchStart={(ev)=>{ ev.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown',{key:'p',keyCode:80,bubbles:true})) }}
+          onTouchStart={(ev)=>{ ev.preventDefault(); touchInput.current.pause=true }}
           style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,215,0,0.1)',border:'2px solid rgba(255,215,0,0.4)',color:'#FFD700',fontSize:18,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',touchAction:'manipulation'}}
         >⏸</button>
         <button
-          onTouchStart={(ev)=>{ ev.preventDefault(); const c=containerRef.current?.querySelector('canvas'); const t=c||window; t.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',keyCode:39,which:39,bubbles:true})); window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',keyCode:39,which:39,bubbles:true})) }}
-          onTouchEnd={(ev)=>{ ev.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup',{key:'ArrowRight',keyCode:39,bubbles:true})) }}
+          onTouchStart={(ev)=>{ ev.preventDefault(); touchInput.current.right=true }}
+          onTouchEnd={(ev)=>{ ev.preventDefault(); touchInput.current.right=false }}
           style={{width:72,height:72,borderRadius:'50%',background:'rgba(0,234,255,0.15)',border:'2px solid rgba(0,234,255,0.6)',color:'#00EAFF',fontSize:28,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',boxShadow:'0 0 16px rgba(0,234,255,0.3)',touchAction:'manipulation'}}
         >➡️</button>
       </div>
