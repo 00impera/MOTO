@@ -27,7 +27,7 @@ const RARITY_COLORS: Record<string, string> = {
 }
 
 export default function Mint() {
-  const { connected, loading, balanceNFT, balanceMON, address,
+  const { connected, loading, balanceNFT, balanceMON,
           connect, mintNFT, toast: toastState } = useWeb3() as any
 
   const [model,     setModel]     = useState(0)
