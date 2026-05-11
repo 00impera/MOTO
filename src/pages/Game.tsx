@@ -389,43 +389,53 @@ export default function Game() {
 
         // ── Player car — NO flat photo, composite visual ─────────────────────
         this.player = this.add.container(this.lanes[this.playerLane], H-90)
-        // Underbody glow
-        const underGlow=this.add.ellipse(0,42,90,24,0x00EAFF,0.35)
-        // MASINA COMPOZITA: body + 4 roti animate
-        const bodyImg = this.add.image(0, -5, 'body')
-        bodyImg.setDisplaySize(72, 110)
-        // Roți față
-        const wFL = this.add.image(-32, -38, 'wheel_fl')
-        wFL.setDisplaySize(28, 28)
-        const wFR = this.add.image(32, -38, 'wheel_fr')
-        wFR.setDisplaySize(28, 28)
-        // Roți spate
-        const wRL = this.add.image(-32, 38, 'wheel_rl')
-        wRL.setDisplaySize(28, 28)
-        const wRR = this.add.image(32, 38, 'wheel_rr')
-        wRR.setDisplaySize(28, 28)
-        // Spin roti continuu
-        this.tweens.add({targets:[wFL,wFR,wRL,wRR], angle:360, duration:300, repeat:-1, ease:'Linear'})
-        // Engine glow sub masina
-        const engGlow=this.add.circle(0, 52, 14, 0x39FF14, 0.7)
-        this.tweens.add({targets:engGlow,alpha:{from:0.3,to:1},scaleX:{from:0.8,to:1.3},scaleY:{from:0.8,to:1.3},duration:200,yoyo:true,repeat:-1})
-        // Glow iridescent pe body
+        // Underbody glow - Deep gold + green
+        const underGlow=this.add.ellipse(0,48,100,22,0x39FF14,0.3)
+        const underGlow2=this.add.ellipse(0,48,80,14,0xC8960C,0.4)
+        // Body masina - fara roti
+        const bodyImg = this.add.image(0, 0, 'body')
+        bodyImg.setDisplaySize(78, 118)
+        // Holo border - cyan + purple
         const holoGfx=this.add.graphics()
-        holoGfx.lineStyle(2,0x00EAFF,0.25); holoGfx.strokeRect(-36,-55,72,110)
-        holoGfx.lineStyle(1,0xa259ff,0.15); holoGfx.strokeRect(-30,-50,60,100)
-        // Speed lines deasupra
+        holoGfx.lineStyle(2,0x00EAFF,0.35); holoGfx.strokeRect(-40,-60,80,120)
+        holoGfx.lineStyle(1,0xa259ff,0.2); holoGfx.strokeRect(-35,-55,70,110)
+        holoGfx.lineStyle(1,0xFFD700,0.15); holoGfx.strokeRect(-30,-50,60,100)
+        // Engine glow - bright green
+        const engGlow=this.add.circle(0,56,16,0x39FF14,0.8)
+        const engGlow2=this.add.circle(0,56,24,0x00FF00,0.2)
+        this.tweens.add({targets:engGlow,alpha:{from:0.4,to:1},scaleX:{from:0.7,to:1.2},scaleY:{from:0.7,to:1.2},duration:150,yoyo:true,repeat:-1})
+        this.tweens.add({targets:engGlow2,alpha:{from:0.1,to:0.4},scaleX:{from:0.8,to:1.4},duration:300,yoyo:true,repeat:-1})
+        // Speed lines - gold + green
         const spd=this.add.graphics()
-        spd.lineStyle(1,0x39FF14,0.5); spd.beginPath()
-        spd.moveTo(-20,-58); spd.lineTo(-20,-78)
-        spd.moveTo(20,-58); spd.lineTo(20,-78)
-        spd.moveTo(-8,-58); spd.lineTo(-8,-85)
-        spd.moveTo(8,-58); spd.lineTo(8,-85)
+        spd.lineStyle(2,0xFFD700,0.7); spd.beginPath()
+        spd.moveTo(-18,-62); spd.lineTo(-18,-88)
+        spd.moveTo(18,-62); spd.lineTo(18,-88)
         spd.strokePath()
-        // MITRALIERA pe masina
-        const gunImg = this.add.image(0, -55, 'machinegun')
-        gunImg.setDisplaySize(22, 28)
+        spd.lineStyle(1,0x39FF14,0.5); spd.beginPath()
+        spd.moveTo(-8,-62); spd.lineTo(-8,-95)
+        spd.moveTo(8,-62); spd.lineTo(8,-95)
+        spd.moveTo(0,-62); spd.lineTo(0,-98)
+        spd.strokePath()
+        // Gold shimmer corners
+        const corners=this.add.graphics()
+        corners.lineStyle(2,0xC8960C,0.9)
+        corners.beginPath()
+        corners.moveTo(-40,-40); corners.lineTo(-40,-60); corners.lineTo(-20,-60)
+        corners.moveTo(40,-40); corners.lineTo(40,-60); corners.lineTo(20,-60)
+        corners.moveTo(-40,40); corners.lineTo(-40,60); corners.lineTo(-20,60)
+        corners.moveTo(40,40); corners.lineTo(40,60); corners.lineTo(20,60)
+        corners.strokePath()
+        // Iridescent shimmer dots
+        const sh1=this.add.circle(-30,-30,3,0xa259ff,0.8)
+        const sh2=this.add.circle(30,-30,3,0x00eaff,0.7)
+        const sh3=this.add.circle(-30,30,3,0xff6ec7,0.6)
+        const sh4=this.add.circle(30,30,3,0xFFE566,0.7)
+        this.tweens.add({targets:[sh1,sh2,sh3,sh4],alpha:{from:0.2,to:1},duration:600+Math.random()*400,yoyo:true,repeat:-1})
+        // Mitraliera gold
+        const gunImg = this.add.image(0, -60, 'machinegun')
+        gunImg.setDisplaySize(20, 26)
         gunImg.setTint(0xFFD700)
-        this.player.add([underGlow, wFL, wFR, wRL, wRR, bodyImg, holoGfx, engGlow, spd, gunImg])
+        this.player.add([underGlow2,underGlow,bodyImg,holoGfx,corners,engGlow2,engGlow,spd,sh1,sh2,sh3,sh4,gunImg])
 
         // ── Character portrait (3D framed) ──────────────────────────────────
         const cpx=W-48, cpy=H-70
@@ -792,10 +802,11 @@ export default function Game() {
           touchInput.current.right=false
         }
         if(touchInput.current.pause){ touchInput.current.pause=false; this.togglePause() }
-        this.player.x=Phaser.Math.Linear(this.player.x,this.lanes[this.playerLane],0.15)
-        // Tilt based on movement direction
-        const targetTilt = this.player.x < this.lanes[this.playerLane] ? 0.15 : this.player.x > this.lanes[this.playerLane] ? -0.15 : 0
-        this.player.rotation = Phaser.Math.Linear(this.player.rotation, targetTilt, 0.1)
+        this.player.x=Phaser.Math.Linear(this.player.x,this.lanes[this.playerLane],0.18)
+        // Tilt usor - max 0.08 rad
+        const dx = this.lanes[this.playerLane] - this.player.x
+        const targetTilt = Math.max(-0.08, Math.min(0.08, dx * 0.004))
+        this.player.rotation = Phaser.Math.Linear(this.player.rotation, targetTilt, 0.12)
 
         // Auto shoot with colored lasers
         this.shootTimer+=delta
@@ -807,15 +818,19 @@ export default function Game() {
           // Main bullet
           const b=this.add.container(this.player.x,this.player.y-55)
           const bGfx=this.add.graphics()
-          // Glont mitraliera - forma realista
-          bGfx.fillStyle(0xFFE566,1); bGfx.fillEllipse(0,-14,5,10)
-          bGfx.fillStyle(0xC8960C,1); bGfx.fillRect(-2,-10,4,12)
-          bGfx.fillStyle(0xB8860B,1); bGfx.fillRect(-2,2,4,4)
-          // Glow portocaliu
-          const bTip=this.add.circle(0,-14,4,0xFFD700,0.8)
+          // Glont gold - varf bright, corp deep gold
+          bGfx.fillStyle(0xFFE566,1); bGfx.fillEllipse(0,-16,6,10)
+          bGfx.fillStyle(0xFFD700,1); bGfx.fillRect(-2,-12,5,14)
+          bGfx.fillStyle(0xC8960C,1); bGfx.fillRect(-2,2,5,5)
+          bGfx.fillStyle(0xB8860B,1); bGfx.fillRect(-1,7,3,3)
+          // Glow verde neon
+          const bTip=this.add.circle(0,-16,5,0x39FF14,0.9)
+          const bTip2=this.add.circle(0,-16,8,0x00FF00,0.3)
+          // Trail cyan
           const bTrail=this.add.graphics()
-          bTrail.lineStyle(2,col,0.4); bTrail.beginPath(); bTrail.moveTo(0,0); bTrail.lineTo(0,16); bTrail.strokePath()
-          b.add([bTrail,bGfx,bTip]);(b as any).col=col;(b as any).dmg=1
+          bTrail.lineStyle(3,0x00EAFF,0.5); bTrail.beginPath(); bTrail.moveTo(0,0); bTrail.lineTo(0,20); bTrail.strokePath()
+          bTrail.lineStyle(1,0xFFD700,0.3); bTrail.beginPath(); bTrail.moveTo(0,0); bTrail.lineTo(0,28); bTrail.strokePath()
+          b.add([bTrail,bGfx,bTip2,bTip]);(b as any).col=col;(b as any).dmg=1
           this.bullets.add(b)
           // Glow burst at gun
           const burst=this.add.circle(this.player.x,this.player.y-55,8,col,0.5)
@@ -856,7 +871,7 @@ export default function Game() {
 
         // Coin spawn
         this.coinTimer+=delta
-        if(this.coinTimer>400){ this.coinTimer=0; this.spawnCoin(Phaser.Math.Between(0,4)) }
+        if(this.coinTimer>900){ this.coinTimer=0; this.spawnCoin(Phaser.Math.Between(0,4)) }
 
         // Supply drop spawn
         this.supplyTimer+=delta
@@ -906,7 +921,7 @@ export default function Game() {
         if(this.magnet){ this.magnetTimer-=delta; if(this.magnetTimer<=0){ this.magnet=false } }
         if(this.doubleScore){ this.doubleTimer-=delta; if(this.doubleTimer<=0){ this.doubleScore=false } }
 
-        const eSpeed=(1.2+this.level*0.18)*this.speedMult
+        const eSpeed=(1.0+this.level*0.15)*this.speedMult
 
         // Bullets move & hit
         this.bullets.getChildren().forEach((b:any)=>{
