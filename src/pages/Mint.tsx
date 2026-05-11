@@ -38,40 +38,7 @@ export default function Mint() {
   const [tab, setTab]             = useState<'model'|'character'>('model')
 
 
-  const [myNFTs, setMyNFTs] = useState<{id:number,image:string,model:number,rarity:number}[]>([])
   // const [loadingNFTs, setLoadingNFTs] = useState(false)
-
-  const fetchMyNFTs = async (addr: string) => {
-    
-    try {
-      const NFT = '0x6e9E4f12D33aAf4834E6D7f61a3a9EDB5ca97AD1' as `0x\${string}`
-      const { createPublicClient, http, defineChain } = await import('viem')
-      const monad = defineChain({ id: 143, name: 'Monad Mainnet',
-        nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
-        rpcUrls: { default: { http: ['https://rpc.monad.xyz'] } } })
-      const client = createPublicClient({ chain: monad, transport: http('https://rpc.monad.xyz') })
-      const abi = [
-        { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{type:'address'}], outputs: [{type:'uint256'}] },
-        { name: 'tokenOfOwnerByIndex', type: 'function', stateMutability: 'view', inputs: [{type:'address'},{type:'uint256'}], outputs: [{type:'uint256'}] },
-        { name: 'tokenURI', type: 'function', stateMutability: 'view', inputs: [{type:'uint256'}], outputs: [{type:'string'}] },
-        { name: 'traits', type: 'function', stateMutability: 'view', inputs: [{type:'uint256'}], outputs: [{type:'uint8'},{type:'uint8'},{type:'uint8'},{type:'uint8'},{type:'uint16'}] },
-      ] as const
-      const bal = await client.readContract({ address: NFT, abi, functionName: 'balanceOf', args: [addr as `0x\${string}`] }) as bigint
-      const count = Math.min(Number(bal), 12)
-      const nfts = []
-      for (let i = 0; i < count; i++) {
-        const tokenId = await client.readContract({ address: NFT, abi, functionName: 'tokenOfOwnerByIndex', args: [addr as `0x\${string}`, BigInt(i)] }) as bigint
-        const [uri, tr] = await Promise.all([
-          client.readContract({ address: NFT, abi, functionName: 'tokenURI', args: [tokenId] }) as Promise<string>,
-          client.readContract({ address: NFT, abi, functionName: 'traits', args: [tokenId] }) as Promise<readonly [number,number,number,number,number]>,
-        ])
-        const b64 = uri.replace("data:application/json;base64,",""); const json = JSON.parse(Buffer.from(b64, "base64").toString())
-        nfts.push({ id: Number(tokenId), image: json.image, model: tr[0], rarity: tr[2] })
-      }
-      setMyNFTs(nfts)
-    } catch(e) { console.warn('fetchMyNFTs', e) }
-    finally {  }
-  }
 
   useEffect(() => {
     import('viem').then(({ createPublicClient, http, formatEther, defineChain }) => {
@@ -98,7 +65,6 @@ export default function Mint() {
 
   useEffect(() => {
     const addr = address
-    if (addr) fetchMyNFTs(addr)
   }, [address])
 
   const handleMint = async () => {
