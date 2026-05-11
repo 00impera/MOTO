@@ -277,6 +277,7 @@ export default function Game() {
       levelConfig: any = {}
       speedMult = 1
       motoMult = 1
+      togglePause: () => void = () => {}
       roadLines: Phaser.GameObjects.Rectangle[] = []
 
       constructor() { super('GameScene') }
@@ -441,7 +442,7 @@ export default function Game() {
           fontFamily:'Orbitron,monospace',fontSize:'13px',color:'#39FF14',
           backgroundColor:'#050A0E',padding:{x:16,y:8}
         }).setOrigin(0.5).setDepth(100).setVisible(false).setInteractive({useHandCursor:true})
-        const togglePause=()=>{
+        this.togglePause=()=>{
           this.paused=!this.paused
           pauseOverlay.setVisible(this.paused)
           pauseText.setVisible(this.paused)
@@ -450,10 +451,10 @@ export default function Game() {
           if(this.paused) this.physics.pause()
           else this.physics.resume()
         }
-        pauseBtn.on('pointerdown',togglePause)
-        resumeBtn.on('pointerdown',togglePause)
+        pauseBtn.on('pointerdown',this.togglePause)
+        resumeBtn.on('pointerdown',this.togglePause)
         // P key
-        this.input.keyboard!.on('keydown-P',togglePause)
+        this.input.keyboard!.on('keydown-P',this.togglePause)
         this.add.text(W/2,6,char.name,{fontFamily:'Orbitron,monospace',fontSize:'9px',color:'#00EAFF'}).setOrigin(0.5,0)
         this.add.text(W/2,20,`BONUS ${char.coins}`,{fontFamily:'Orbitron,monospace',fontSize:'9px',color:'#39FF14'}).setOrigin(0.5,0)
         const lvName=this.levelConfig?.name?`${this.levelConfig.name} · LV1`:'LEVEL 1'
@@ -665,7 +666,7 @@ export default function Game() {
           if(this.playerLane<4) this.playerLane++
           touchInput.current.right=false
         }
-        if(touchInput.current.pause){ touchInput.current.pause=false; togglePause() }
+        if(touchInput.current.pause){ touchInput.current.pause=false; this.togglePause() }
         this.player.x=Phaser.Math.Linear(this.player.x,this.lanes[this.playerLane],0.15)
 
         // Auto shoot with colored lasers

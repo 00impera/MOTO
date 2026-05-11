@@ -11,6 +11,9 @@ import Packs from './pages/Packs'
 import Buy from './pages/Buy'
 import Staking from './pages/Staking'
 import Game from './pages/Game'
+import Claim from './pages/Claim'
+import Governance from './pages/Governance'
+import Mint from './pages/Mint'
 import './index.css'
 
 export default function App() {
@@ -20,16 +23,19 @@ export default function App() {
         <Navbar/>
         <main>
           <Routes>
-            <Route path="/" element={<Home/>}/>
-            <Route path="/game" element={<Game/>}/>
-            <Route path="/weapons" element={<Weapons/>}/>
-            <Route path="/upgrades" element={<Upgrades/>}/>
-            <Route path="/levels" element={<Levels/>}/>
+            <Route path="/"           element={<Home/>}/>
+            <Route path="/game"       element={<Game/>}/>
+            <Route path="/weapons"    element={<Weapons/>}/>
+            <Route path="/upgrades"   element={<Upgrades/>}/>
+            <Route path="/levels"     element={<Levels/>}/>
             <Route path="/characters" element={<Characters/>}/>
-            <Route path="/cars" element={<Cars/>}/>
-            <Route path="/packs" element={<Packs/>}/>
-            <Route path="/buy" element={<Buy/>}/>
-            <Route path="/staking" element={<Staking/>}/>
+            <Route path="/cars"       element={<Cars/>}/>
+            <Route path="/packs"      element={<Packs/>}/>
+            <Route path="/buy"        element={<Buy/>}/>
+            <Route path="/staking"    element={<Staking/>}/>
+            <Route path="/claim"      element={<Claim/>}/>
+            <Route path="/governance" element={<Governance/>}/>
+            <Route path="/mint"       element={<Mint/>}/>
           </Routes>
         </main>
       </BrowserRouter>

@@ -403,9 +403,73 @@ export function useWeb3() {
     }
   }, [])
 
+
+  // ── Get Voting Power ───────────────────────────────────────────
+  const getVotingPower = useCallback(async (address: Address): Promise<string> => {
+    try {
+      const power = await publicClient.readContract({
+        address: '0xdF8cC3CD492cce409740249dffAB4f85594B3083' as Address,
+        abi: [{ name: 'getVotingPower', type: 'function', stateMutability: 'view',
+          inputs: [{ name: 'voter', type: 'address' }], outputs: [{ type: 'uint256' }] }],
+        functionName: 'getVotingPower',
+        args: [address],
+      }) as bigint
+      return power.toString()
+    } catch (e) { console.warn('getVotingPower', e); return '0' }
+  }, [])
+
+  // ── Create Governance Proposal ─────────────────────────────────
+  const createProposal = useCallback(async (title: string, description: string): Promise<boolean> => {
+    if (!walletClient || !state.address) { toast('Connect wallet first', 'err'); return false }
+    setState(s => ({ ...s, loading: true }))
+    try {
+      toast('Creating proposal...', 'info')
+      const hash = await walletClient.writeContract({
+        address: '0x2926649E00E08f740EF33C523Ca79eE8D1ccCfD9' as Address,
+        abi: [{ name: 'createProposal', type: 'function', stateMutability: 'nonpayable',
+          inputs: [{ name: 'title', type: 'string' }, { name: 'description', type: 'string' }],
+          outputs: [{ type: 'uint256' }] }],
+        functionName: 'createProposal',
+        args: [title, description],
+        account: state.address, chain: monad,
+      })
+      await publicClient.waitForTransactionReceipt({ hash })
+      toast('Proposal created! 🗳️', 'ok')
+      return true
+    } catch (e: any) {
+      toast('Failed: ' + (e.shortMessage || e.message), 'err')
+      return false
+    } finally { setState(s => ({ ...s, loading: false })) }
+  }, [walletClient, state.address, toast])
+
+  // ── Cast Vote ──────────────────────────────────────────────────
+  const castVote = useCallback(async (proposalId: number, support: 0|1|2, weight: number): Promise<boolean> => {
+    if (!walletClient || !state.address) { toast('Connect wallet first', 'err'); return false }
+    setState(s => ({ ...s, loading: true }))
+    try {
+      toast('Casting vote...', 'info')
+      const hash = await walletClient.writeContract({
+        address: '0x2926649E00E08f740EF33C523Ca79eE8D1ccCfD9' as Address,
+        abi: [{ name: 'castVote', type: 'function', stateMutability: 'nonpayable',
+          inputs: [{ name: 'proposalId', type: 'uint256' }, { name: 'support', type: 'uint8' }, { name: 'weight', type: 'uint256' }],
+          outputs: [] }],
+        functionName: 'castVote',
+        args: [BigInt(proposalId), support, BigInt(weight)],
+        account: state.address, chain: monad,
+      })
+      await publicClient.waitForTransactionReceipt({ hash })
+      toast('Vote cast! ✅', 'ok')
+      return true
+    } catch (e: any) {
+      toast('Vote failed: ' + (e.shortMessage || e.message), 'err')
+      return false
+    } finally { setState(s => ({ ...s, loading: false })) }
+  }, [walletClient, state.address, toast])
+
   return {
     ...state,
     connect, disconnect, fetchBalances, signScore, mintNFT, claimReward,
     buyCoins, addMotoToWallet, getPlayerStats, enterTournament,
+    getVotingPower, createProposal, castVote,
   }
 }
