@@ -19,15 +19,7 @@ const MODELS = [
   { name: 'GHOST GOLD',    file: 'model_4_ghost_gold.jpg',    color: '#FFD700' },
 ]
 
-const CHARACTERS = [
-  { name: 'RIDER',         file: 'char_1.jpg' },
-  { name: 'HUNTER',        file: 'char_2.jpg' },
-  { name: 'GHOST',         file: 'char_3.jpg' },
-  { name: 'TITAN',         file: 'char_5.jpg' },
-  { name: 'SHADOW',        file: 'char_6.jpg' },
-  { name: 'STORM',         file: 'char_10.jpg' },
-  { name: 'MONAD',         file: 'char_17_monad_purple.jpg' },
-]
+const CHARACTERS: {name:string,file:string}[] = []
 
 const RARITIES = ['COMMON', 'RARE', 'EPIC', 'LEGENDARY']
 const RARITY_COLORS: Record<string, string> = {
@@ -334,30 +326,6 @@ export default function Mint() {
           </div>
         </div>
 
-        {/* MY NFTs */}
-        {myNFTs.length > 0 && (
-          <div style={{ marginTop: 40 }}>
-            <div style={{ fontFamily: 'Orbitron,monospace', fontSize: 10, color: 'rgba(255,215,0,0.5)', letterSpacing: 3, marginBottom: 16, textAlign: 'center' }}>
-              YOUR NFT COLLECTION ({myNFTs.length})
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
-              {myNFTs.map(nft => {
-                const rc = RARITY_COLORS[RARITIES[nft.rarity]] || '#aaa'
-                return (
-                  <div key={nft.id} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid \${rc}44`, position: 'relative' }}>
-                    <img src={nft.image} alt={`NFT #\${nft.id}`}
-                      style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(5,10,14,0.85) 0%, transparent 50%)' }} />
-                    <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8 }}>
-                      <div style={{ fontFamily: 'Orbitron,monospace', fontSize: 8, color: rc }}>#{nft.id}</div>
-                      <div style={{ fontFamily: 'Orbitron,monospace', fontSize: 7, color: 'rgba(255,255,255,0.4)' }}>{RARITIES[nft.rarity]} · {MODELS[nft.model]?.name}</div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </>
   )
