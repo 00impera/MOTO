@@ -11,7 +11,7 @@ const btn: React.CSSProperties = {
 
 export default function Claim() {
   const { address, connected, loading, balanceMOTO, balanceMON,
-          connect, signScore, claimReward, getPlayerStats, toast: toastState } = useWeb3()
+          connect, signScore, getPlayerStats, toast: toastState } = useWeb3()
 
   const [score, setScore]     = useState('')
   const [busy, setBusy]       = useState(false)
