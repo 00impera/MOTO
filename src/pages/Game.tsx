@@ -1003,18 +1003,18 @@ export default function Game() {
       {/* MOBILE TOUCH CONTROLS */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:560,marginTop:10,padding:'0 8px',userSelect:'none'}}>
         <button
-          onTouchStart={()=>{ const e=new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}); document.dispatchEvent(e) }}
-          onTouchEnd={()=>{ const e=new KeyboardEvent('keyup',{key:'ArrowLeft',bubbles:true}); document.dispatchEvent(e) }}
-          style={{width:72,height:72,borderRadius:'50%',background:'rgba(0,234,255,0.1)',border:'2px solid rgba(0,234,255,0.5)',color:'#00EAFF',fontSize:28,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',boxShadow:'0 0 16px rgba(0,234,255,0.2)',touchAction:'manipulation'}}
+          onTouchStart={(ev)=>{ ev.preventDefault(); const c=containerRef.current?.querySelector('canvas'); const t=c||window; t.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',keyCode:37,which:37,bubbles:true})); window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',keyCode:37,which:37,bubbles:true})) }}
+          onTouchEnd={(ev)=>{ ev.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup',{key:'ArrowLeft',keyCode:37,bubbles:true})) }}
+          style={{width:72,height:72,borderRadius:'50%',background:'rgba(0,234,255,0.15)',border:'2px solid rgba(0,234,255,0.6)',color:'#00EAFF',fontSize:28,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',boxShadow:'0 0 16px rgba(0,234,255,0.3)',touchAction:'manipulation'}}
         >⬅️</button>
         <button
-          onTouchStart={()=>{ const e=new KeyboardEvent('keydown',{key:'p',bubbles:true}); document.dispatchEvent(e) }}
-          style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,215,0,0.08)',border:'2px solid rgba(255,215,0,0.3)',color:'#FFD700',fontSize:18,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',touchAction:'manipulation'}}
+          onTouchStart={(ev)=>{ ev.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown',{key:'p',keyCode:80,bubbles:true})) }}
+          style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,215,0,0.1)',border:'2px solid rgba(255,215,0,0.4)',color:'#FFD700',fontSize:18,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',touchAction:'manipulation'}}
         >⏸</button>
         <button
-          onTouchStart={()=>{ const e=new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}); document.dispatchEvent(e) }}
-          onTouchEnd={()=>{ const e=new KeyboardEvent('keyup',{key:'ArrowRight',bubbles:true}); document.dispatchEvent(e) }}
-          style={{width:72,height:72,borderRadius:'50%',background:'rgba(0,234,255,0.1)',border:'2px solid rgba(0,234,255,0.5)',color:'#00EAFF',fontSize:28,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',boxShadow:'0 0 16px rgba(0,234,255,0.2)',touchAction:'manipulation'}}
+          onTouchStart={(ev)=>{ ev.preventDefault(); const c=containerRef.current?.querySelector('canvas'); const t=c||window; t.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',keyCode:39,which:39,bubbles:true})); window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',keyCode:39,which:39,bubbles:true})) }}
+          onTouchEnd={(ev)=>{ ev.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup',{key:'ArrowRight',keyCode:39,bubbles:true})) }}
+          style={{width:72,height:72,borderRadius:'50%',background:'rgba(0,234,255,0.15)',border:'2px solid rgba(0,234,255,0.6)',color:'#00EAFF',fontSize:28,display:'flex',alignItems:'center',justifyContent:'center',WebkitTapHighlightColor:'transparent',cursor:'pointer',boxShadow:'0 0 16px rgba(0,234,255,0.3)',touchAction:'manipulation'}}
         >➡️</button>
       </div>
     </div>
