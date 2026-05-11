@@ -40,9 +40,13 @@ const CAT_COLOR:Record<string,string> = {
 
 export default function Upgrades() {
   const [cat, setCat] = useState('ALL')
-  const [levels, setLevels] = useState<Record<number,number>>({})
+  const [levels, setLevels] = useState<Record<number,number>>(() => {
+    try { return JSON.parse(localStorage.getItem('upgradeLevels') || '{}') } catch { return {} }
+  })
   const visible = cat === 'ALL' ? UPGRADES : UPGRADES.filter(u => u.cat === cat)
-  const [coins, setCoins] = useState(5000)
+  const [coins, setCoins] = useState(() => {
+    try { return parseInt(localStorage.getItem('upgradeCoins') || '5000') } catch { return 5000 }
+  })
   const lv = (id:number) => levels[id] || 0
   const upgrade = (id:number) => {
     const u = UPGRADES.find(x => x.id === id)!
@@ -50,8 +54,14 @@ export default function Upgrades() {
     if (l >= u.maxLv) return
     const price = u.prices[l]
     if (coins < price) return
-    setCoins(c => c - price)
-    setLevels(p => ({...p, [id]: l+1}))
+    const newCoins = coins - price
+    const newLevels = {...levels, [id]: l+1}
+    setCoins(newCoins)
+    setLevels(newLevels)
+    try {
+      localStorage.setItem('upgradeCoins', String(newCoins))
+      localStorage.setItem('upgradeLevels', JSON.stringify(newLevels))
+    } catch {}
   }
 
   return (

@@ -249,6 +249,19 @@ export default function Game() {
     audioRef.current.startBg()
 
     const char     = CHARACTERS[selChar]
+    // Citesc upgrade levels din localStorage
+    const upg = (() => { try { return JSON.parse(localStorage.getItem('upgradeLevels') || '{}') } catch { return {} } })()
+    const upgLv = (id:number) => upg[id] || 0
+    // Calcul effecte upgrade
+    const speedBonus     = 1 + upgLv(1) * 0.15          // TURBO BOOST
+    const rapidFireBonus = 1 - upgLv(16) * 0.10          // RAPID FIRE
+    const warHeadBonus   = 1 + upgLv(17) * 0.20          // WAR HEAD
+    const magnetRange    = 100 + upgLv(21) * 50          // COIN MAGNET
+    const doubleCoinsUpg = upgLv(22) >= 1; void doubleCoinsUpg                // DOUBLE COINS
+    const extraLives     = upgLv(25)                     // EXTRA LIFE
+    const hasSecondWind  = upgLv(26) >= 1; void hasSecondWind                // SECOND WIND
+    const twinShotLv     = upgLv(18)                     // TWIN SHOT upgrade
+    const shieldGenLv    = upgLv(11)                     // SHIELD GEN
     const car      = CARS[selCar]
     const coinMult = parseFloat(char.coins.replace('x',''))
     const audio    = audioRef.current
@@ -262,7 +275,7 @@ export default function Game() {
       coinGroup!: Phaser.GameObjects.Group
       cursors!: Phaser.Types.Input.Keyboard.CursorKeys
       wasd!: any
-      score = 0; lives = 3; coinsCount = 0
+      score = 0; lives = 3; coinsCount = 0; secondWindUsed = false
       scoreText!: Phaser.GameObjects.Text
       livesText!: Phaser.GameObjects.Text
       coinsText!: Phaser.GameObjects.Text
@@ -436,6 +449,9 @@ export default function Game() {
         gunImg.setDisplaySize(20, 26)
         gunImg.setTint(0xFFD700)
         this.player.add([underGlow2,underGlow,bodyImg,holoGfx,corners,engGlow2,engGlow,spd,sh1,sh2,sh3,sh4,gunImg])
+        // Aplic upgrade lives + shield
+        this.lives = 3 + extraLives
+        if(shieldGenLv > 0) { this.shield = true; this.activateShield() }
 
         // ── Character portrait (3D framed) ──────────────────────────────────
         const cpx=W-48, cpy=H-70
@@ -810,7 +826,7 @@ export default function Game() {
 
         // Auto shoot with colored lasers
         this.shootTimer+=delta
-        const fireRate=Math.max(80,220-this.level*20)
+        const fireRate=Math.max(60,(220-this.level*20)*rapidFireBonus)
         if(this.shootTimer>fireRate){
           this.shootTimer=0
           audio.sfx('shoot')
@@ -830,13 +846,13 @@ export default function Game() {
           const bTrail=this.add.graphics()
           bTrail.lineStyle(3,0x00EAFF,0.5); bTrail.beginPath(); bTrail.moveTo(0,0); bTrail.lineTo(0,20); bTrail.strokePath()
           bTrail.lineStyle(1,0xFFD700,0.3); bTrail.beginPath(); bTrail.moveTo(0,0); bTrail.lineTo(0,28); bTrail.strokePath()
-          b.add([bTrail,bGfx,bTip2,bTip]);(b as any).col=col;(b as any).dmg=1
+          b.add([bTrail,bGfx,bTip2,bTip]);(b as any).col=col;(b as any).dmg=Math.ceil(1*warHeadBonus)
           this.bullets.add(b)
           // Glow burst at gun
           const burst=this.add.circle(this.player.x,this.player.y-55,8,col,0.5)
           this.tweens.add({targets:burst,alpha:0,scaleX:3,scaleY:3,duration:100,onComplete:()=>burst.destroy()})
           // Twin shot at higher levels
-          if(this.level>=3){
+          if(this.level>=3||twinShotLv>=1){
             const cols=[0x00EAFF,0xa259ff]
             cols.forEach((c,idx)=>{
               const offset=idx===0?-20:20
@@ -921,7 +937,7 @@ export default function Game() {
         if(this.magnet){ this.magnetTimer-=delta; if(this.magnetTimer<=0){ this.magnet=false } }
         if(this.doubleScore){ this.doubleTimer-=delta; if(this.doubleTimer<=0){ this.doubleScore=false } }
 
-        const eSpeed=(1.0+this.level*0.15)*this.speedMult
+        const eSpeed=(1.0+this.level*0.15)*this.speedMult*speedBonus
 
         // Bullets move & hit
         this.bullets.getChildren().forEach((b:any)=>{
@@ -932,7 +948,7 @@ export default function Game() {
               if(!coin.active) return
               const dx=this.player.x-coin.x, dy=this.player.y-coin.y
               const dist=Math.sqrt(dx*dx+dy*dy)
-              if(dist<180){ coin.x+=dx*0.08; coin.y+=dy*0.08 }
+              if(dist<magnetRange){ coin.x+=dx*0.08; coin.y+=dy*0.08 }
             })
           }
           if(b.y<70){b.destroy();return}
