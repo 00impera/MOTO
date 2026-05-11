@@ -140,7 +140,7 @@ export default function Mint() {
             {/* MOTO IMAGE from IPFS */}
             <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden',
               border: `2px solid ${rarityColor}55`, boxShadow: `0 0 30px ${rarityColor}22` }}>
-              <img src={`${IPFS}/${currentModel.file}`} alt={currentModel.name}
+              <img src={`/cars/${currentModel.file}`} alt={currentModel.name}
                 style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }}
                 onError={e => { (e.target as HTMLImageElement).src = '/cars/model0_street_red.jpg' }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(5,10,14,0.85) 0%, transparent 50%)' }} />
@@ -218,7 +218,7 @@ export default function Mint() {
                     boxShadow: model === i ? `0 0 16px ${m.color}44` : 'none',
                     transition: 'all 0.2s', position: 'relative',
                   }}>
-                    <img src={`${IPFS}/${m.file}`} alt={m.name}
+                    <img src={`/cars/${m.file}`} alt={m.name}
                       style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }}
                       onError={e => { (e.target as HTMLImageElement).src = `/cars/${m.file.replace('model_', 'model').replace('_', '')}` }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(5,10,14,0.8) 0%, transparent 50%)' }} />
