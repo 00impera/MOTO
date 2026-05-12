@@ -306,7 +306,7 @@ export default function Game() {
       coinGroup!: Phaser.GameObjects.Group
       cursors!: Phaser.Types.Input.Keyboard.CursorKeys
       wasd!: any
-      score = 0; lives = 3; coinsCount = 0; secondWindUsed = false
+      score = 0; lives = 5; coinsCount = 0; secondWindUsed = false
       scoreText!: Phaser.GameObjects.Text
       livesText!: Phaser.GameObjects.Text
       coinsText!: Phaser.GameObjects.Text
@@ -326,7 +326,7 @@ export default function Game() {
       birdTimer=0; lightningTimer=0
       playerLane=2
       lanes=[80,180,280,380,480]
-      level=1; levelThreshold=100
+      level=1; levelThreshold=200
       levelConfig: any = {}
       speedMult = 1
       motoMult = 1
@@ -360,6 +360,7 @@ export default function Game() {
           }
         } catch(e) { console.warn('preload level img error', e) }
         this.load.image('car', `/cars/${car.img}`)
+        console.log('[Game] Loading car:', car.img, 'index:', selCar)
         // Preload toate masinile
         const allCars = ['lambo','jeep','moto','motoo','police','body']
         allCars.forEach(n => { try { this.load.image(`car_${n}`, `/cars/${n}.png.jpg`) } catch{} })
@@ -939,7 +940,7 @@ export default function Game() {
 
         // Enemy spawn
         this.enemyTimer+=delta
-        const eInterval=Math.max(400,2000-this.level*80)
+        const eInterval=Math.max(600,2800-this.level*80)
         if(this.enemyTimer>eInterval){ this.enemyTimer=0; this.spawnEnemy(Phaser.Math.Between(0,4)) }
 
         // Obstacle spawn
@@ -960,7 +961,7 @@ export default function Game() {
 
         // Enemy lasers
         this.laserTimer+=delta
-        if(this.laserTimer>Math.max(1200,3000-this.level*150)){
+        if(this.laserTimer>Math.max(2000,5000-this.level*150)){
           this.laserTimer=0
           this.enemies.getChildren().forEach((e:any)=>{
             if(!e.active||e.y<80||e.y>H-100) return
@@ -1022,7 +1023,7 @@ export default function Game() {
         this.isAccel = !!(touchInput.current.left||touchInput.current.right||this.cursors?.left?.isDown||this.cursors?.right?.isDown)
         audio.updateEngine(this.engSpeed, this.maxEngSpeed, this.isAccel)
 
-        const eSpeed=(1.0+this.level*0.15)*this.speedMult*speedBonus
+        const eSpeed=(0.8+this.level*0.12)*this.speedMult*speedBonus
 
         // Bullets move & hit
         this.bullets.getChildren().forEach((b:any)=>{
