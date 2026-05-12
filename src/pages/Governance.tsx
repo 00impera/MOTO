@@ -139,7 +139,7 @@ export default function Governance() {
   const voteLabel = (s: 0|1|2) => s === 0 ? 'AGAINST' : s === 1 ? 'FOR' : 'ABSTAIN'
   const voteColor = (s: 0|1|2) => s === 0 ? '#FF2244' : s === 1 ? '#39FF14' : '#FFD700'
 
-  const isActive = (p: Proposal) => !p.executed && !p.canceled
+  const isActive = (_p: Proposal) => true
 
   const formatVotes = (v: bigint) => {
     const n = Number(v)
@@ -253,7 +253,7 @@ export default function Governance() {
               const forPct = total ? Math.round((Number(p.forVotes) / total) * 100) : 0
               const active = isActive(p)
               const hasVoted = voted[p.id]
-              const status = p.canceled ? 'CANCELED' : p.executed ? 'EXECUTED' : 'ACTIVE'
+              const status = p.canceled ? "CANCELED" : p.executed ? "EXECUTED" : "ACTIVE"
               const statusColor = p.canceled ? '#FF2244' : p.executed ? '#FFD700' : '#39FF14'
 
               return (
