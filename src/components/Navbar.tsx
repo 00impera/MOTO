@@ -7,6 +7,7 @@ const NAV = [
   {to:'/game',       label:'▶ PLAY',     color:'#39FF14'},
   {to:'/claim',      label:'⚡ CLAIM',    color:'#39FF14'},
   {to:'/mint',       label:'🏍 MINT NFT', color:'#FFD700'},
+  {to:'/packs',      label:'PACKS',       color:'#ff6ec7'},
   {to:'/governance', label:'🗳 VOTE',      color:'#a259ff'},
   {to:'/weapons',    label:'ARSENAL',     color:'#00EAFF'},
   {to:'/cars',       label:'GARAGE',      color:'#FFD700'},
