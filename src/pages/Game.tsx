@@ -558,6 +558,18 @@ export default function Game() {
         this.add.text(W/2,20,`BONUS ${char.coins}`,{fontFamily:'Orbitron,monospace',fontSize:'9px',color:'#39FF14'}).setOrigin(0.5,0)
         const lvName=this.levelConfig?.name?`${this.levelConfig.name} · LV1`:'LEVEL 1'
         this.levelText=this.add.text(W/2,36,lvName,{fontFamily:'Orbitron,monospace',fontSize:'10px',color:'#a259ff'}).setOrigin(0.5,0)
+        // NITRO BAR
+        const nitroLabel=this.add.text(8,H-38,'NITRO',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'#00EAFF'}).setDepth(10)
+        void nitroLabel
+        this.add.rectangle(90,H-32,160,10,0x050A0E,0.9).setDepth(10).setStrokeStyle(1,0x00EAFF,0.6)
+        ;(this as any).nitroBar=this.add.rectangle(12,H-32,0,8,0x00EAFF,1).setDepth(10).setOrigin(0,0.5)
+        // FUEL BAR
+        const fuelLabel=this.add.text(8,H-20,'FUEL',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'#FFD700'}).setDepth(10)
+        void fuelLabel
+        this.add.rectangle(90,H-14,160,10,0x050A0E,0.9).setDepth(10).setStrokeStyle(1,0xFFD700,0.6)
+        ;(this as any).fuelBar=this.add.rectangle(12,H-14,160,8,0xFFD700,1).setDepth(10).setOrigin(0,0.5)
+        // N KEY hint
+        this.add.text(W-8,56,'N = NITRO',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'rgba(0,234,255,0.4)'}).setOrigin(1,0).setDepth(10)
         this.add.text(W-8,8,'MOTO RUNNER',{fontFamily:'Orbitron,monospace',fontSize:'9px',color:'#BF5FFF'}).setOrigin(1,0)
         this.add.text(W-8,24,'← → MOVE',{fontFamily:'Orbitron,monospace',fontSize:'8px',color:'rgba(255,215,0,0.3)'}).setOrigin(1,0)
         this.add.text(W-8,40,'AUTO FIRE',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'rgba(57,255,20,0.3)'}).setOrigin(1,0)
