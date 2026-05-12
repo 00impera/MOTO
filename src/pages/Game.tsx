@@ -17,12 +17,12 @@ const CHARACTERS = [
 ]
 
 const CARS = [
-  { id:1, name:'STREET RUNNER', img:'1.png.jpg' },
-  { id:2, name:'NEON RACER',    img:'2.png.jpg' },
-  { id:3, name:'CYBER HAWK',    img:'3.png.jpg' },
-  { id:4, name:'TURBO GHOST',   img:'4.png.jpg' },
-  { id:5, name:'IRON CLAW',     img:'5.png.jpg' },
-  { id:6, name:'PLASMA BLADE',  img:'6.png.jpg' },
+  { id:1, name:'LAMBO',    img:'lambo.png.jpg',  turbo:1.4, armor:1.0, weight:0.9, neon:'#FFD700' },
+  { id:2, name:'JEEP',     img:'jeep.png.jpg',   turbo:1.1, armor:1.8, weight:1.5, neon:'#39FF14' },
+  { id:3, name:'MOTO',     img:'moto.png.jpg',   turbo:1.6, armor:0.7, weight:0.6, neon:'#00EAFF' },
+  { id:4, name:'MOTO II',  img:'motoo.png.jpg',  turbo:1.5, armor:0.8, weight:0.7, neon:'#a259ff' },
+  { id:5, name:'POLICE',   img:'police.png.jpg', turbo:1.2, armor:1.3, weight:1.1, neon:'#ff6ec7' },
+  { id:6, name:'BODY',     img:'body.jpeg',      turbo:1.3, armor:1.1, weight:1.0, neon:'#C8960C' },
 ]
 
 const ENEMY_IMGS = [
@@ -71,6 +71,36 @@ class AudioEngine {
   }
 
   // ── Background music: dark driving beat with bass and synth ────────────────
+  engineOsc: OscillatorNode|null = null
+  engineGain: GainNode|null = null
+
+  startEngine() {
+    if(this.engineOsc) return
+    const osc = this.ctx.createOscillator()
+    const g = this.ctx.createGain()
+    osc.type = 'sawtooth'
+    osc.frequency.value = 80
+    osc.connect(g); g.connect(this.sfxGain)
+    g.gain.value = 0.15
+    osc.start()
+    this.engineOsc = osc
+    this.engineGain = g
+  }
+
+  updateEngine(speed: number, maxSpeed: number, accelerating: boolean) {
+    if(!this.engineOsc || !this.engineGain) return
+    const ratio = speed/maxSpeed
+    const baseFreq = 60 + ratio*180
+    const targetFreq = accelerating ? baseFreq*1.3 : baseFreq
+    this.engineOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.1)
+    const targetVol = 0.08 + ratio*0.18
+    this.engineGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.1)
+  }
+
+  stopEngine() {
+    if(this.engineOsc){ this.engineOsc.stop(); this.engineOsc=null; this.engineGain=null }
+  }
+
   startBg() {
     if (this.bgPlaying) return
     this.bgPlaying = true
@@ -162,7 +192,7 @@ class AudioEngine {
 
   stopBg() { this.bgPlaying = false }
 
-  sfx(type: 'shoot'|'hit'|'coin'|'die'|'obstacle'|'thunder') {
+  sfx(type: 'shoot'|'hit'|'coin'|'die'|'obstacle'|'thunder'|'nitro') {
     try {
       const c = this.ctx
       if (type === 'shoot') {
@@ -263,6 +293,7 @@ export default function Game() {
     const twinShotLv     = upgLv(18)                     // TWIN SHOT upgrade
     const shieldGenLv    = upgLv(11)                     // SHIELD GEN
     const car      = CARS[selCar]
+    const carStats = { turbo: (car as any).turbo||1.3, armor: (car as any).armor||1.0, weight: (car as any).weight||1.0, neon: (car as any).neon||'#FFD700' }
     const coinMult = parseFloat(char.coins.replace('x',''))
     const audio    = audioRef.current
 
@@ -288,6 +319,9 @@ export default function Game() {
       magnet=false; magnetTimer=0
       doubleScore=false; doubleTimer=0
       combo=0; comboTimer=0; comboText:any=null
+      nitroActive=false; nitroTimer=0; nitroCooldown=0
+      fuel=100; fuelTimer=0
+      engSpeed=0; maxEngSpeed=100; isAccel=false
       streak=0
       birdTimer=0; lightningTimer=0
       playerLane=2
@@ -326,6 +360,9 @@ export default function Game() {
           }
         } catch(e) { console.warn('preload level img error', e) }
         this.load.image('car', `/cars/${car.img}`)
+        // Preload toate masinile
+        const allCars = ['lambo','jeep','moto','motoo','police','body']
+        allCars.forEach(n => { try { this.load.image(`car_${n}`, `/cars/${n}.png.jpg`) } catch{} })
         this.load.image('char', `/characters/${char.img}`)
         ENEMY_IMGS.forEach(e => {
           this.load.image(`enemy_${e.key}`, `/enemies/${e.key}.PNG.${e.ext}`)
@@ -410,8 +447,10 @@ export default function Game() {
         bodyImg.setDisplaySize(78, 118)
         // Holo border - cyan + purple
         const holoGfx=this.add.graphics()
-        holoGfx.lineStyle(2,0x00EAFF,0.35); holoGfx.strokeRect(-40,-60,80,120)
+        const neonCol = parseInt((carStats.neon||'#00EAFF').replace('#',''),16)
+        holoGfx.lineStyle(2,neonCol,0.35); holoGfx.strokeRect(-40,-60,80,120)
         holoGfx.lineStyle(1,0xa259ff,0.2); holoGfx.strokeRect(-35,-55,70,110)
+        holoGfx.lineStyle(1,neonCol,0.15); holoGfx.strokeRect(-30,-50,60,100)
         holoGfx.lineStyle(1,0xFFD700,0.15); holoGfx.strokeRect(-30,-50,60,100)
         // Engine glow - bright green
         const engGlow=this.add.circle(0,56,16,0x39FF14,0.8)
@@ -818,6 +857,17 @@ export default function Game() {
           touchInput.current.right=false
         }
         if(touchInput.current.pause){ touchInput.current.pause=false; this.togglePause() }
+
+        // NITRO - tasta N
+        const keyN = this.input.keyboard!.addKey('N')
+        if(Phaser.Input.Keyboard.JustDown(keyN) && this.nitroCooldown<=0 && !this.nitroActive){
+          this.nitroActive=true; this.nitroTimer=3000; this.nitroCooldown=15000
+          this.speedMult = carStats.turbo * 1.5
+          audio.sfx('nitro')
+          // Flash neon
+          const nf=this.add.rectangle(this.player.x,this.player.y,90,130,0x00EAFF,0.3)
+          this.tweens.add({targets:nf,alpha:0,scaleX:2,scaleY:2,duration:400,onComplete:()=>nf.destroy()})
+        }
         this.player.x=Phaser.Math.Linear(this.player.x,this.lanes[this.playerLane],0.18)
         // Tilt usor - max 0.08 rad
         const dx = this.lanes[this.playerLane] - this.player.x
@@ -928,6 +978,23 @@ export default function Game() {
           audio.sfx('thunder')
         }
 
+        // NITRO update
+        if(this.nitroActive){
+          this.nitroTimer-=delta
+          if(this.nitroTimer<=0){ this.nitroActive=false; this.speedMult=1 }
+        }
+        if(this.nitroCooldown>0) this.nitroCooldown-=delta
+        const nitroFill = this.nitroActive ? 80 : Math.max(0, 80*(1-this.nitroCooldown/15000))
+        if((this as any).nitroBar) (this as any).nitroBar.width = nitroFill
+
+        // FUEL update - scade in timp
+        this.fuelTimer+=delta
+        if(this.fuelTimer>500){ this.fuelTimer=0; this.fuel=Math.max(0,this.fuel-0.5) }
+        if((this as any).fuelBar) (this as any).fuelBar.width = (this.fuel/100)*80
+        // Fara fuel = viteza mai mica
+        if(this.fuel<=0) this.speedMult=Math.max(0.3,this.speedMult*0.99)
+        // Refuel din supply drop - adaugat mai jos
+
         // Combo decay
         if(this.combo>0){
           this.comboTimer+=delta
@@ -936,6 +1003,12 @@ export default function Game() {
         // Power-up timers
         if(this.magnet){ this.magnetTimer-=delta; if(this.magnetTimer<=0){ this.magnet=false } }
         if(this.doubleScore){ this.doubleTimer-=delta; if(this.doubleTimer<=0){ this.doubleScore=false } }
+
+        // Update engine sound
+        this.engSpeed = Math.min(this.maxEngSpeed, this.engSpeed + (this.isAccel?2:0) - (!this.isAccel?1:0))
+        this.engSpeed = Math.max(0, this.engSpeed)
+        this.isAccel = !!(touchInput.current.left||touchInput.current.right||this.cursors?.left?.isDown||this.cursors?.right?.isDown)
+        audio.updateEngine(this.engSpeed, this.maxEngSpeed, this.isAccel)
 
         const eSpeed=(1.0+this.level*0.15)*this.speedMult*speedBonus
 
