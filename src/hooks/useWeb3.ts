@@ -53,25 +53,39 @@ const NFT_ABI = [
 ] as const
 
 const CONTROLLER_ABI = [
-  { name: 'claimReward', type: 'function', stateMutability: 'nonpayable',
+  // ── Write ──────────────────────────────────────────────────────
+  { name: 'claimReward',    type: 'function', stateMutability: 'nonpayable',
     inputs: [
       { name: 'score',     type: 'uint256' },
       { name: 'nonce',     type: 'uint256' },
       { name: 'signature', type: 'bytes'   },
     ], outputs: [] },
-  { name: 'getPlayerStats', type: 'function', stateMutability: 'view',
+  { name: 'enterTournament', type: 'function', stateMutability: 'payable',
+    inputs: [{ name: 'tokenId', type: 'uint256' }], outputs: [] },
+  // ── Read ───────────────────────────────────────────────────────
+  { name: 'getPlayerStats',  type: 'function', stateMutability: 'view',
     inputs: [{ name: 'player', type: 'address' }],
     outputs: [{ name: 'earned', type: 'uint256' }, { name: 'score', type: 'uint256' }] },
   { name: 'getSeasonScore',  type: 'function', stateMutability: 'view',
     inputs: [{ name: 'player', type: 'address' }], outputs: [{ type: 'uint256' }] },
-  { name: 'currentSeason',   type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-  { name: 'rewardPerPoint',  type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-  { name: 'maxClaimPerGame', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-  { name: 'tournamentActive',type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'bool'    }] },
-  { name: 'enterTournament', type: 'function', stateMutability: 'payable',
-    inputs: [{ name: 'tokenId', type: 'uint256' }], outputs: [] },
   { name: 'totalEarned',     type: 'function', stateMutability: 'view',
-    inputs: [{ name: '', type: 'address' }], outputs: [{ type: 'uint256' }] },
+    inputs: [{ name: 'player', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  { name: 'totalBurned',     type: 'function', stateMutability: 'view',
+    inputs: [{ name: 'player', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  { name: 'usedSignatures',  type: 'function', stateMutability: 'view',
+    inputs: [{ name: 'sig', type: 'bytes32' }], outputs: [{ type: 'bool' }] },
+  { name: 'currentSeason',   type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'tournamentActive',type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'bool'    }] },
+  { name: 'tournamentFee',   type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'owner',           type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'address' }] },
+  { name: 'signer',          type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'address' }] },
+  // ── Owner only ─────────────────────────────────────────────────
+  { name: 'setMaxClaim',     type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'amount', type: 'uint256' }], outputs: [] },
+  { name: 'setSigner',       type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'signer', type: 'address' }], outputs: [] },
+  { name: 'withdraw',        type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'token', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [] },
 ] as const
 
 // ── Public client (read-only, no wallet needed) ──────────────────
