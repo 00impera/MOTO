@@ -356,6 +356,7 @@ export default function Game() {
       engSpeed=0; maxEngSpeed=100; isAccel=false
       streak=0
       birdTimer=0; lightningTimer=0
+      planeTimer=0; planeActive=false; planeObj:any=null; planeBombs:any[]=[]
       playerLane=2
       lanes=[90,210,330,450,570]
       level=1; levelThreshold=200
@@ -364,6 +365,7 @@ export default function Game() {
       motoMult = 1
       togglePause: () => void = () => {}
       roadLines: Phaser.GameObjects.Rectangle[] = []
+      keyN!: Phaser.Input.Keyboard.Key
 
       constructor() { super('GameScene') }
 
@@ -413,6 +415,7 @@ export default function Game() {
         this.load.image('laser_gun', '/obstacles/laser.png.jpg')
         this.load.image('rocket_gun', '/obstacles/rocket.png.jpg')
         this.load.image('plasma_gun', '/obstacles/plasma.png.jpg')
+        this.load.image('plain', '/obstacles/plain.png.jpg')
       }
 
       create() {
@@ -549,6 +552,7 @@ export default function Game() {
         // Controls
         this.cursors=this.input.keyboard!.createCursorKeys()
         this.wasd=this.input.keyboard!.addKeys('W,A,S,D')
+        this.keyN=this.input.keyboard!.addKey('N')
 
         // ── HUD top bar ──────────────────────────────────────────────────────
         const hud=this.add.graphics()
@@ -877,6 +881,130 @@ export default function Game() {
         this.tweens.add({targets:ring,scaleX:4,scaleY:4,alpha:0,duration:400,onComplete:()=>ring.destroy()})
       }
 
+
+      spawnPlane() {
+        if(this.planeActive) return
+        this.planeActive = true
+        const W = this.scale.width
+        const fromLeft = Math.random() > 0.5
+        const startX = fromLeft ? -80 : W + 80
+        const endX   = fromLeft ? W + 80 : -80
+        const planeY  = Phaser.Math.Between(80, 180)
+
+        // Container avion
+        const container = this.add.container(startX, planeY)
+        const planeImg = this.add.image(0, 0, 'plain')
+        planeImg.setDisplaySize(80, 50)
+        if(!fromLeft) planeImg.setFlipX(true)
+
+        // Glow sub avion
+        const glow = this.add.graphics()
+        glow.lineStyle(2, 0x00EAFF, 0.6); glow.strokeEllipse(0, 20, 60, 15)
+        // Trails de motor
+        const trail = this.add.graphics()
+        trail.lineStyle(3, 0xFF6EC7, 0.7)
+        trail.beginPath()
+        if(fromLeft) {
+          trail.moveTo(-30, -5); trail.lineTo(-60, -5)
+          trail.moveTo(-30, 5);  trail.lineTo(-55, 5)
+        } else {
+          trail.moveTo(30, -5);  trail.lineTo(60, -5)
+          trail.moveTo(30, 5);   trail.lineTo(55, 5)
+        }
+        trail.strokePath()
+        container.add([glow, trail, planeImg])
+        container.setDepth(5)
+        ;(this as any).planeObj = container
+
+        // Text warning
+        const warn = this.add.text(W/2, planeY - 40, '⚠ AIRSTRIKE INCOMING ⚠', {
+          fontFamily:'Orbitron,monospace', fontSize:'11px', color:'#FF2244',
+          stroke:'#000', strokeThickness:3
+        }).setOrigin(0.5).setDepth(10)
+        this.tweens.add({targets:warn, alpha:{from:0,to:1}, duration:200, yoyo:true, repeat:4,
+          onComplete:()=>warn.destroy()})
+
+        // Zbor avion
+        this.tweens.add({
+          targets: container,
+          x: endX,
+          duration: 3500,
+          ease: 'Linear',
+          onComplete: () => {
+            container.destroy()
+            this.planeActive = false
+          }
+        })
+
+        // Pulse trail
+        this.tweens.add({targets: trail, alpha:{from:0.3,to:1}, duration:200, yoyo:true, repeat:-1})
+
+        // Arunca 3 rachete/torpile in timp ce zboara
+        let bombCount = 0
+        const bombTimer = this.time.addEvent({
+          delay: 800,
+          repeat: 2,
+          callback: () => {
+            if(!container.active) return
+            bombCount++
+            const bx = container.x
+            const by = container.y + 25
+            // Racheta/torpila vizuala
+            const bomb = this.add.container(bx, by)
+            const bg = this.add.graphics()
+            // Corp torpila
+            bg.fillStyle(0xC8960C, 1); bg.fillEllipse(0, 0, 14, 30)
+            bg.fillStyle(0xFFD700, 1); bg.fillEllipse(0, -12, 8, 10)
+            bg.fillStyle(0xFF2244, 1); bg.fillTriangle(-5, 8, 5, 8, 0, 16)
+            // Glow
+            const bg2 = this.add.circle(0, 0, 10, 0xFF6600, 0.4)
+            // Fum trail
+            const smoke = this.add.graphics()
+            smoke.fillStyle(0xFFFFFF, 0.3); smoke.fillCircle(0, -18, 5)
+            bomb.add([bg2, bg, smoke])
+            bomb.setDepth(6)
+            ;(bomb as any).isPlaneBomb = true
+
+            // Trail de fum animat
+            this.tweens.add({targets:smoke, alpha:{from:0.1,to:0.5}, scaleX:{from:0.5,to:1.5}, duration:150, yoyo:true, repeat:-1})
+
+            // Cade drept in jos
+            this.tweens.add({
+              targets: bomb,
+              y: this.scale.height + 50,
+              duration: 1200,
+              ease: 'Power1',
+              onUpdate: () => {
+                // Verifica coliziune cu player
+                if(!bomb.active) return
+                if(Math.abs(bomb.x - this.player.x) < 35 && Math.abs(bomb.y - this.player.y) < 35) {
+                  this.spawnExplosion(bomb.x, bomb.y)
+                  bomb.destroy()
+                  if(this.shield){
+                    this.shield=false
+                    if(this.shieldGfx){this.shieldGfx.destroy();this.shieldGfx=null}
+                    audio.sfx('coin')
+                  } else {
+                    this.lives--
+                    this.livesText.setText('❤️'.repeat(Math.max(0,this.lives)))
+                    if(this.lives<=0) this.endGame()
+                    else { this.cameras.main.shake(300,0.025); audio.sfx('hit') }
+                  }
+                }
+              },
+              onComplete: () => {
+                if(bomb.active) {
+                  // Explozie la impact cu solul
+                  this.spawnExplosion(bomb.x, this.scale.height - 30)
+                  bomb.destroy()
+                }
+              }
+            })
+          }
+        })
+        void bombCount; void bombTimer
+      }
+
       update(_t:number, delta:number) {
         if (this.gameOverFlag) return
         if (this.paused) return
@@ -912,8 +1040,7 @@ export default function Game() {
         if(touchInput.current.pause){ touchInput.current.pause=false; this.togglePause() }
 
         // NITRO - tasta N
-        const keyN = this.input.keyboard!.addKey('N')
-        if(Phaser.Input.Keyboard.JustDown(keyN) && this.nitroCooldown<=0 && !this.nitroActive){
+        if(Phaser.Input.Keyboard.JustDown(this.keyN) && this.nitroCooldown<=0 && !this.nitroActive){
           this.nitroActive=true; this.nitroTimer=3000; this.nitroCooldown=15000
           this.speedMult = carStats.turbo * 1.5
           audio.sfx('nitro')
@@ -1031,6 +1158,13 @@ export default function Game() {
           audio.sfx('thunder')
         }
 
+        // PLANE spawn - din cand in cand
+        this.planeTimer+=delta
+        if(this.planeTimer > Phaser.Math.Between(18000,35000)){
+          this.planeTimer=0
+          if(this.level>=2) this.spawnPlane()
+        }
+
         // NITRO update
         if(this.nitroActive){
           this.nitroTimer-=delta
@@ -1133,12 +1267,6 @@ export default function Game() {
           }
         })
 
-        // Supply drop spawn
-        this.supplyTimer+=delta
-        if(this.supplyTimer>Phaser.Math.Between(8000,15000)){
-          this.supplyTimer=0
-          this.spawnSupplyDrop()
-        }
 
         // Enemy lasers move
         this.enemyLasers.getChildren().forEach((l:any)=>{
@@ -1157,6 +1285,18 @@ export default function Game() {
           if(!o.active) return
           o.y+=eSpeed*0.65
           if(o.y>H+80){o.destroy();return}
+          if((o as any).isSupply && Math.abs(o.x-this.player.x)<30&&Math.abs(o.y-this.player.y)<40){
+            const t=(o as any).supplyType
+            this.spawnSupplyEffect(o.x,o.y,t)
+            o.destroy()
+            if(t===0){ this.lives=Math.min(5,this.lives+1); this.livesText.setText('❤️'.repeat(this.lives)); this.fuel=Math.min(100,this.fuel+30); audio.sfx('coin') }
+            else if(t===1){ this.shield=true; this.activateShield() }
+            else if(t===2){ this.magnet=true; this.magnetTimer=8000; audio.sfx('coin') }
+            const slabels=['+LIFE','SHIELD','MAGNET']
+            const st=this.add.text(this.player.x,this.player.y-90,slabels[t],{fontFamily:'Orbitron,monospace',fontSize:'12px',color:'#FFD700',stroke:'#000',strokeThickness:3}).setOrigin(0.5)
+            this.tweens.add({targets:st,y:st.y-60,alpha:0,duration:1200,onComplete:()=>st.destroy()})
+            return
+          }
           if(Math.abs(o.x-this.player.x)<28&&Math.abs(o.y-this.player.y)<32){
             this.spawnExplosion(o.x,o.y); o.destroy(); this.takeDamage()
           }
@@ -1181,9 +1321,9 @@ export default function Game() {
       }
 
       takeDamage() {
+        if(this.shield){ this.shield=false; if(this.shieldGfx){this.shieldGfx.destroy();this.shieldGfx=null}; audio.sfx('coin'); return }
         this.lives--
-        const h=['❤ ❤ ❤','❤ ❤','❤','💀']
-        this.livesText.setText(h[Math.max(0,3-this.lives)])
+        this.livesText.setText('❤️'.repeat(Math.max(0,this.lives)) || '💀')
         this.cameras.main.shake(280,0.02)
         const f=this.add.rectangle(this.scale.width/2,this.scale.height/2,this.scale.width,this.scale.height,0xFF0000,0.3)
         this.tweens.add({targets:f,alpha:0,duration:350,onComplete:()=>f.destroy()})
