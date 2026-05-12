@@ -11,7 +11,7 @@ export default function Buy() {
 
   const stats = [
     { label: 'CONTRACT', val: `${FULL_CONTRACT.slice(0,10)}...${FULL_CONTRACT.slice(-5)}`, color: '#00EAFF',
-      link: `https://explorer.monad.xyz/address/${FULL_CONTRACT}` },
+      link: `https://monadexplorer.com/address/${FULL_CONTRACT}` },
     { label: 'NETWORK',  val: 'Monad Mainnet', color: '#FFD700' },
     { label: 'SYMBOL',   val: 'MOTO',          color: '#39FF14' },
     { label: 'DECIMALS', val: '18',            color: '#FFD700' },
