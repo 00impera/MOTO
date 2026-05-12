@@ -89,12 +89,43 @@ class AudioEngine {
 
   updateEngine(speed: number, maxSpeed: number, accelerating: boolean) {
     if(!this.engineOsc || !this.engineGain) return
-    const ratio = speed/maxSpeed
-    const baseFreq = 60 + ratio*180
-    const targetFreq = accelerating ? baseFreq*1.3 : baseFreq
-    this.engineOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.1)
-    const targetVol = 0.08 + ratio*0.18
-    this.engineGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.1)
+    const ratio = Math.max(0, Math.min(1, speed/maxSpeed))
+    // Idle: 55Hz, Accel: 120-280Hz, HighRPM: 300Hz+
+    let targetFreq: number
+    let targetVol: number
+    if(ratio < 0.05) {
+      // IDLE - bâzâit constant jos
+      targetFreq = 52 + Math.sin(Date.now()*0.003)*4
+      targetVol = 0.06
+    } else if(accelerating && ratio < 0.6) {
+      // ACCELERATION - creste rapid
+      targetFreq = 80 + ratio*260
+      targetVol = 0.10 + ratio*0.14
+    } else if(ratio >= 0.8) {
+      // HIGH RPM - agresiv, pitch inalt
+      targetFreq = 280 + ratio*120
+      targetVol = 0.20 + ratio*0.08
+    } else if(!accelerating && ratio > 0.1) {
+      // DECELERATION - scade pitch + crackle
+      targetFreq = 60 + ratio*100
+      targetVol = 0.05 + ratio*0.08
+      // Pop & crackle la decel
+      if(Math.random() < 0.03) {
+        const crackle = this.ctx.createOscillator()
+        const cg = this.ctx.createGain()
+        crackle.type = 'square'
+        crackle.frequency.value = 80 + Math.random()*40
+        cg.gain.setValueAtTime(0.08, this.ctx.currentTime)
+        cg.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime+0.05)
+        crackle.connect(cg); cg.connect(this.sfxGain)
+        crackle.start(); crackle.stop(this.ctx.currentTime+0.05)
+      }
+    } else {
+      targetFreq = 80 + ratio*200
+      targetVol = 0.08 + ratio*0.12
+    }
+    this.engineOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.08)
+    this.engineGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.08)
   }
 
   stopEngine() {
@@ -292,7 +323,8 @@ export default function Game() {
     const hasSecondWind  = upgLv(26) >= 1; void hasSecondWind                // SECOND WIND
     const twinShotLv     = upgLv(18)                     // TWIN SHOT upgrade
     const shieldGenLv    = upgLv(11)                     // SHIELD GEN
-    const car      = CARS[selCar]
+    const savedCar = parseInt(localStorage.getItem('selCar') || '0')
+    const car      = CARS[savedCar] || CARS[0]
     const carStats = { turbo: (car as any).turbo||1.3, armor: (car as any).armor||1.0, weight: (car as any).weight||1.0, neon: (car as any).neon||'#FFD700' }
     const coinMult = parseFloat(char.coins.replace('x',''))
     const audio    = audioRef.current
@@ -574,6 +606,7 @@ export default function Game() {
         this.add.text(W-8,8,'MOTO RUNNER',{fontFamily:'Orbitron,monospace',fontSize:'9px',color:'#BF5FFF'}).setOrigin(1,0)
         this.add.text(W-8,24,'← → MOVE',{fontFamily:'Orbitron,monospace',fontSize:'8px',color:'rgba(255,215,0,0.3)'}).setOrigin(1,0)
         this.add.text(W-8,40,'AUTO FIRE',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'rgba(57,255,20,0.3)'}).setOrigin(1,0)
+        this.add.text(W-8,52,'↑↓ SPEED',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'rgba(0,234,255,0.3)'}).setOrigin(1,0)
       }
 
       // ── Explosion: lightning bolts + particle coins ─────────────────────────
@@ -869,6 +902,13 @@ export default function Game() {
           if(this.playerLane<4) this.playerLane++
           touchInput.current.right=false
         }
+        // Sageti sus/jos = viteza manuala
+        if(this.cursors.up?.isDown||this.wasd.W?.isDown){
+          this.speedMult=Math.min(2.5, this.speedMult+0.02)
+        }
+        if(this.cursors.down?.isDown||this.wasd.S?.isDown){
+          this.speedMult=Math.max(0.3, this.speedMult-0.02)
+        }
         if(touchInput.current.pause){ touchInput.current.pause=false; this.togglePause() }
 
         // NITRO - tasta N
@@ -940,7 +980,7 @@ export default function Game() {
 
         // Enemy spawn
         this.enemyTimer+=delta
-        const eInterval=Math.max(600,2800-this.level*80)
+        const eInterval=Math.max(800,3500-this.level*100)
         if(this.enemyTimer>eInterval){ this.enemyTimer=0; this.spawnEnemy(Phaser.Math.Between(0,4)) }
 
         // Obstacle spawn
@@ -961,7 +1001,7 @@ export default function Game() {
 
         // Enemy lasers
         this.laserTimer+=delta
-        if(this.laserTimer>Math.max(2000,5000-this.level*150)){
+        if(this.laserTimer>Math.max(2500,6000-this.level*200)){
           this.laserTimer=0
           this.enemies.getChildren().forEach((e:any)=>{
             if(!e.active||e.y<80||e.y>H-100) return
@@ -1023,7 +1063,7 @@ export default function Game() {
         this.isAccel = !!(touchInput.current.left||touchInput.current.right||this.cursors?.left?.isDown||this.cursors?.right?.isDown)
         audio.updateEngine(this.engSpeed, this.maxEngSpeed, this.isAccel)
 
-        const eSpeed=(0.8+this.level*0.12)*this.speedMult*speedBonus
+        const eSpeed=(0.6+this.level*0.10)*this.speedMult*speedBonus
 
         // Bullets move & hit
         this.bullets.getChildren().forEach((b:any)=>{
@@ -1180,8 +1220,10 @@ export default function Game() {
       }
     }
 
-    const GW = Math.min(window.innerWidth - 8, 720)
-    const GH = Math.round(GW * 900 / 720)
+    const GW = Math.min(window.innerWidth, window.screen.width, 720)
+    const GH = Math.min(window.innerHeight - 120, Math.round(GW * 900 / 720))
+    // Salveaza selCar in localStorage ca sa il citeasca GameScene
+    localStorage.setItem('selCar', String(selCar))
     gameRef.current = new Phaser.Game({
       type: Phaser.AUTO,
       width: GW,
