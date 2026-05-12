@@ -325,7 +325,7 @@ export default function Game() {
       streak=0
       birdTimer=0; lightningTimer=0
       playerLane=2
-      lanes=[80,180,280,380,480]
+      lanes=[90,210,330,450,570]
       level=1; levelThreshold=200
       levelConfig: any = {}
       speedMult = 1
@@ -1180,8 +1180,8 @@ export default function Game() {
       }
     }
 
-    const GW = Math.min(window.innerWidth - 8, 560)
-    const GH = Math.round(GW * 700 / 560)
+    const GW = Math.min(window.innerWidth - 8, 720)
+    const GH = Math.round(GW * 900 / 720)
     gameRef.current = new Phaser.Game({
       type: Phaser.AUTO,
       width: GW,
@@ -1245,7 +1245,7 @@ export default function Game() {
                   <img src={`/cars/${c.img}`} alt={c.name}
                     style={{width:'100%',height:'100%',objectFit:'contain',
                       filter:selCar===i?'brightness(1.15) saturate(1.3) drop-shadow(0 0 6px #00EAFF)':'brightness(0.8) saturate(0.7)'}}
-                    onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
+                    onError={e=>{(e.target as HTMLImageElement).src='/cars/body.jpeg'}}/>
                 </div>
                 <div style={{padding:'3px 4px',background:selCar===i?'rgba(0,234,255,0.1)':'transparent'}}>
                   <div style={{fontFamily:'Orbitron,monospace',fontSize:6,color:selCar===i?'#00EAFF':'rgba(255,215,0,0.35)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.name}</div>
@@ -1258,11 +1258,16 @@ export default function Game() {
         {/* Selected preview */}
         <div style={{display:'flex',gap:16,marginBottom:24,padding:'12px 16px',border:'1px solid rgba(200,150,12,0.2)',background:'rgba(5,10,14,0.8)'}}>
           <img src={`/characters/${CHARACTERS[selChar].img}`} style={{width:48,height:64,objectFit:'cover',objectPosition:'top',border:'1px solid rgba(162,89,255,0.4)'}} onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
-          <img src={`/cars/${CARS[selCar].img}`} style={{width:64,height:48,objectFit:'contain',alignSelf:'center',filter:'drop-shadow(0 0 6px #00EAFF)'}} onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
+          <img src={`/cars/${CARS[selCar].img}`} style={{width:90,height:70,objectFit:'contain',alignSelf:'center',filter:'drop-shadow(0 0 10px #00EAFF) brightness(1.2)'}} onError={e=>{(e.target as HTMLImageElement).src='/cars/body.jpeg'}}/>
           <div style={{flex:1}}>
             <div style={{fontFamily:'Orbitron,monospace',fontSize:11,color:'#FFD700',marginBottom:4}}>{CHARACTERS[selChar].name}</div>
             <div style={{fontFamily:'Orbitron,monospace',fontSize:9,color:'#39FF14',marginBottom:2}}>COIN BONUS: {CHARACTERS[selChar].coins}</div>
             <div style={{fontFamily:'Orbitron,monospace',fontSize:9,color:'#00EAFF'}}>VEHICLE: {CARS[selCar].name}</div>
+            <div style={{display:'flex',gap:8,marginTop:4,justifyContent:'center'}}>
+              <span style={{fontFamily:'Orbitron,monospace',fontSize:7,color:'#FFD700'}}>TURBO: {((CARS[selCar] as any).turbo||1).toFixed(1)}x</span>
+              <span style={{fontFamily:'Orbitron,monospace',fontSize:7,color:'#39FF14'}}>ARMOR: {((CARS[selCar] as any).armor||1).toFixed(1)}x</span>
+              <span style={{fontFamily:'Orbitron,monospace',fontSize:7,color:'#a259ff'}}>WEIGHT: {((CARS[selCar] as any).weight||1).toFixed(1)}x</span>
+            </div>
           </div>
           <div style={{display:'flex',flexDirection:'column',gap:4,justifyContent:'center'}}>
             <div style={{fontFamily:'Orbitron,monospace',fontSize:7,color:'rgba(255,215,0,0.4)'}}>17 ENEMY TOKENS</div>
@@ -1286,7 +1291,7 @@ export default function Game() {
   // ── Game Screen ──────────────────────────────────────────────────────────────
   return (
     <div className="cyber-bg" style={{padding:'14px',display:'flex',flexDirection:'column',alignItems:'center'}}>
-      <div style={{marginBottom:10,display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:560}}>
+      <div style={{marginBottom:10,display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:720}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <span className="cl-badge cl-badge-gold">LIVE</span>
           <span style={{fontFamily:'Orbitron,monospace',fontSize:8,color:'rgba(255,215,0,0.45)'}}>MOTO RUNNER V2</span>
@@ -1297,10 +1302,10 @@ export default function Game() {
         </div>
         <button onClick={stopGame} className="cl-btn cl-btn-ghost" style={{fontSize:8,padding:'4px 10px'}}>EXIT</button>
       </div>
-      <div ref={containerRef} style={{border:'1px solid rgba(200,150,12,0.35)',boxShadow:'0 0 40px rgba(57,255,20,0.08)',width:'100%',maxWidth:560,touchAction:'manipulation'}}/>
+      <div ref={containerRef} style={{border:'1px solid rgba(200,150,12,0.35)',boxShadow:'0 0 40px rgba(57,255,20,0.08)',width:'100%',maxWidth:720,touchAction:'manipulation'}}/>
 
       {/* MOBILE TOUCH CONTROLS */}
-      <div style={{display:('ontouchstart' in window)?'flex':'none',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:560,marginTop:10,padding:'0 8px',userSelect:'none'}}>
+      <div style={{display:('ontouchstart' in window)?'flex':'none',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:720,marginTop:10,padding:'0 8px',userSelect:'none'}}>
         <button
           onTouchStart={(ev)=>{ ev.preventDefault(); touchInput.current.left=true }}
           onTouchEnd={(ev)=>{ ev.preventDefault(); touchInput.current.left=false }}
