@@ -70,7 +70,6 @@ class AudioEngine {
     this.sfxGain = this.ctx.createGain(); this.sfxGain.gain.value = 0.35; this.sfxGain.connect(this.ctx.destination)
   }
 
-  // ── Background music: dark driving beat with bass and synth ────────────────
   engineOsc: OscillatorNode|null = null
   engineGain: GainNode|null = null
 
@@ -90,26 +89,20 @@ class AudioEngine {
   updateEngine(speed: number, maxSpeed: number, accelerating: boolean) {
     if(!this.engineOsc || !this.engineGain) return
     const ratio = Math.max(0, Math.min(1, speed/maxSpeed))
-    // Idle: 55Hz, Accel: 120-280Hz, HighRPM: 300Hz+
     let targetFreq: number
     let targetVol: number
     if(ratio < 0.05) {
-      // IDLE - bâzâit constant jos
       targetFreq = 52 + Math.sin(Date.now()*0.003)*4
       targetVol = 0.06
     } else if(accelerating && ratio < 0.6) {
-      // ACCELERATION - creste rapid
       targetFreq = 80 + ratio*260
       targetVol = 0.10 + ratio*0.14
     } else if(ratio >= 0.8) {
-      // HIGH RPM - agresiv, pitch inalt
       targetFreq = 280 + ratio*120
       targetVol = 0.20 + ratio*0.08
     } else if(!accelerating && ratio > 0.1) {
-      // DECELERATION - scade pitch + crackle
       targetFreq = 60 + ratio*100
       targetVol = 0.05 + ratio*0.08
-      // Pop & crackle la decel
       if(Math.random() < 0.03) {
         const crackle = this.ctx.createOscillator()
         const cg = this.ctx.createGain()
@@ -137,7 +130,6 @@ class AudioEngine {
     this.bgPlaying = true
     const bpm = 128, bar = (60/bpm)*4
 
-    // Bass drone
     const bass = () => {
       const osc = this.ctx.createOscillator()
       const g   = this.ctx.createGain()
@@ -155,7 +147,6 @@ class AudioEngine {
       if (this.bgPlaying) setTimeout(bass, bar * 1000)
     }
 
-    // Pad synth
     const pad = () => {
       [220, 277.2, 329.6].forEach(f => {
         const osc = this.ctx.createOscillator()
@@ -171,7 +162,6 @@ class AudioEngine {
       if (this.bgPlaying) setTimeout(pad, bar * 2000)
     }
 
-    // Hi-hat pulse
     const hat = () => {
       const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.04, this.ctx.sampleRate)
       const d = buf.getChannelData(0)
@@ -184,7 +174,6 @@ class AudioEngine {
       if (this.bgPlaying) setTimeout(hat, (bar/4) * 1000)
     }
 
-    // Bird chirps (ambient)
     const bird = () => {
       if (!this.bgPlaying) return
       const osc = this.ctx.createOscillator()
@@ -203,7 +192,6 @@ class AudioEngine {
       if (this.bgPlaying) setTimeout(bird, next)
     }
 
-    // Wind low rumble
     const wind = () => {
       const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 2, this.ctx.sampleRate)
       const d = buf.getChannelData(0)
@@ -223,7 +211,7 @@ class AudioEngine {
 
   stopBg() { this.bgPlaying = false }
 
-  sfx(type: 'shoot'|'hit'|'coin'|'die'|'obstacle'|'thunder'|'nitro') {
+  sfx(type: 'shoot'|'hit'|'coin'|'die'|'obstacle'|'thunder'|'nitro'|'plane'|'rocket') {
     try {
       const c = this.ctx
       if (type === 'shoot') {
@@ -259,7 +247,6 @@ class AudioEngine {
         g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8)
         o.connect(g); g.connect(this.sfxGain); o.start(); o.stop(c.currentTime + 0.8)
       } else if (type === 'obstacle') {
-        // Thunder crack for obstacle explosion
         const buf = c.createBuffer(1, c.sampleRate * 0.5, c.sampleRate)
         const d = buf.getChannelData(0)
         for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(c.sampleRate*0.1))
@@ -268,13 +255,35 @@ class AudioEngine {
         src.buffer = buf; src.connect(f); f.connect(g); g.connect(this.sfxGain)
         g.gain.value = 0.6; src.start()
       } else if (type === 'thunder') {
-        // Lightning crack
         const buf = c.createBuffer(1, c.sampleRate * 0.3, c.sampleRate)
         const d = buf.getChannelData(0)
         for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(c.sampleRate*0.05))
         const src = c.createBufferSource(), g = c.createGain()
         src.buffer = buf; src.connect(g); g.connect(this.sfxGain)
         g.gain.value = 0.7; src.start()
+      } else if (type === 'plane') {
+        // Jet engine whoosh
+        const buf = c.createBuffer(1, c.sampleRate * 1.2, c.sampleRate)
+        const d = buf.getChannelData(0)
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(c.sampleRate*0.4))
+        const src = c.createBufferSource()
+        const filt = c.createBiquadFilter()
+        const g = c.createGain()
+        filt.type = 'bandpass'; filt.frequency.value = 1200; filt.Q.value = 0.8
+        src.buffer = buf; src.connect(filt); filt.connect(g); g.connect(this.sfxGain)
+        g.gain.setValueAtTime(0, c.currentTime)
+        g.gain.linearRampToValueAtTime(0.5, c.currentTime + 0.3)
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.2)
+        src.start()
+      } else if (type === 'rocket') {
+        // Rocket launch whistle + boom
+        const o = c.createOscillator(), g = c.createGain()
+        o.type = 'sawtooth'
+        o.frequency.setValueAtTime(800, c.currentTime)
+        o.frequency.exponentialRampToValueAtTime(80, c.currentTime + 0.6)
+        g.gain.setValueAtTime(0.35, c.currentTime)
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.6)
+        o.connect(g); g.connect(this.sfxGain); o.start(); o.stop(c.currentTime + 0.6)
       }
     } catch(_){}
   }
@@ -305,24 +314,21 @@ export default function Game() {
     if (!started || !containerRef.current) return
     if (gameRef.current) { gameRef.current.destroy(true); gameRef.current = null }
 
-    // Init audio on user gesture
     if (!audioRef.current) audioRef.current = new AudioEngine()
     audioRef.current.startBg()
 
     const char     = CHARACTERS[selChar]
-    // Citesc upgrade levels din localStorage
     const upg = (() => { try { return JSON.parse(localStorage.getItem('upgradeLevels') || '{}') } catch { return {} } })()
     const upgLv = (id:number) => upg[id] || 0
-    // Calcul effecte upgrade
-    const speedBonus     = 1 + upgLv(1) * 0.15          // TURBO BOOST
-    const rapidFireBonus = 1 - upgLv(16) * 0.10          // RAPID FIRE
-    const warHeadBonus   = 1 + upgLv(17) * 0.20          // WAR HEAD
-    const magnetRange    = 100 + upgLv(21) * 50          // COIN MAGNET
-    const doubleCoinsUpg = upgLv(22) >= 1; void doubleCoinsUpg                // DOUBLE COINS
-    const extraLives     = upgLv(25)                     // EXTRA LIFE
-    const hasSecondWind  = upgLv(26) >= 1; void hasSecondWind                // SECOND WIND
-    const twinShotLv     = upgLv(18)                     // TWIN SHOT upgrade
-    const shieldGenLv    = upgLv(11)                     // SHIELD GEN
+    const speedBonus     = 1 + upgLv(1) * 0.15
+    const rapidFireBonus = 1 - upgLv(16) * 0.10
+    const warHeadBonus   = 1 + upgLv(17) * 0.20
+    const magnetRange    = 100 + upgLv(21) * 50
+    const doubleCoinsUpg = upgLv(22) >= 1; void doubleCoinsUpg
+    const extraLives     = upgLv(25)
+    const hasSecondWind  = upgLv(26) >= 1; void hasSecondWind
+    const twinShotLv     = upgLv(18)
+    const shieldGenLv    = upgLv(11)
     const savedCar = parseInt(localStorage.getItem('selCar') || '0')
     const car      = CARS[savedCar] || CARS[0]
     const carStats = { turbo: (car as any).turbo||1.3, armor: (car as any).armor||1.0, weight: (car as any).weight||1.0, neon: (car as any).neon||'#FFD700' }
@@ -336,8 +342,11 @@ export default function Game() {
       enemyLasers!: Phaser.GameObjects.Group
       obstacles!: Phaser.GameObjects.Group
       coinGroup!: Phaser.GameObjects.Group
+      airplaneGroup!: Phaser.GameObjects.Group   // ── NOU: avioane
+      airplaneBombs!: Phaser.GameObjects.Group   // ── NOU: bombe/rachete din avion
       cursors!: Phaser.Types.Input.Keyboard.CursorKeys
       wasd!: any
+      keyN!: Phaser.Input.Keyboard.Key           // ── FIX: keyN ca proprietate
       score = 0; lives = 5; coinsCount = 0; secondWindUsed = false
       scoreText!: Phaser.GameObjects.Text
       livesText!: Phaser.GameObjects.Text
@@ -347,6 +356,7 @@ export default function Game() {
       paused = false
       shootTimer=0; enemyTimer=0; coinTimer=0; obstTimer=0; laserTimer=0
       supplyTimer=0
+      airplaneTimer=0                            // ── NOU: timer avion
       shield=false; shieldGfx:any=null
       magnet=false; magnetTimer=0
       doubleScore=false; doubleTimer=0
@@ -356,7 +366,6 @@ export default function Game() {
       engSpeed=0; maxEngSpeed=100; isAccel=false
       streak=0
       birdTimer=0; lightningTimer=0
-      planeTimer=0; planeActive=false; planeObj:any=null; planeBombs:any[]=[]
       playerLane=2
       lanes=[90,210,330,450,570]
       level=1; levelThreshold=200
@@ -365,12 +374,10 @@ export default function Game() {
       motoMult = 1
       togglePause: () => void = () => {}
       roadLines: Phaser.GameObjects.Rectangle[] = []
-      keyN!: Phaser.Input.Keyboard.Key
 
       constructor() { super('GameScene') }
 
       preload() {
-        // Load MOTO coin images
         const coinFiles=[
           ['coin1','coin moto.png.jpeg'],
           ['coin2','moto racer.png.jpg'],
@@ -382,11 +389,9 @@ export default function Game() {
           ['coin8','truckcoin.png.jpeg'],
         ]
         coinFiles.forEach(([key,file])=>this.load.image(key,`/coins/${encodeURIComponent(file)}`))
-        // Load level background
         try {
           const _lc = JSON.parse(localStorage.getItem('activeLevel') || '{}')
           if (_lc?.img) {
-            // Encode special chars in filename
             const parts = _lc.img.split('/')
             const encoded = parts.map((p: string, i: number) => i === parts.length-1 ? encodeURIComponent(p) : p).join('/')
             console.log('[Game] Loading levelBg:', encoded)
@@ -395,7 +400,6 @@ export default function Game() {
         } catch(e) { console.warn('preload level img error', e) }
         this.load.image('car', `/cars/${car.img}`)
         console.log('[Game] Loading car:', car.img, 'index:', selCar)
-        // Preload toate masinile
         const allCars = ['lambo','jeep','moto','motoo','police','body']
         allCars.forEach(n => { try { this.load.image(`car_${n}`, `/cars/${n}.png.jpg`) } catch{} })
         this.load.image('char', `/characters/${char.img}`)
@@ -415,11 +419,11 @@ export default function Game() {
         this.load.image('laser_gun', '/obstacles/laser.png.jpg')
         this.load.image('rocket_gun', '/obstacles/rocket.png.jpg')
         this.load.image('plasma_gun', '/obstacles/plasma.png.jpg')
-        this.load.image('plain', '/obstacles/plain.png.jpg')
+        // ── NOU: imaginea avionului - plain.png.jpg din folderul /plain/ ──
+        this.load.image('airplane', '/plain/plain.png.jpg')
       }
 
       create() {
-        // Load active level config
         try {
           const lc = JSON.parse(localStorage.getItem('activeLevel') || '{}')
           if (lc && lc.id) {
@@ -430,40 +434,33 @@ export default function Game() {
         } catch(_) {}
         const W=this.scale.width, H=this.scale.height
 
-        // ── BG: level image + dark overlay + stars ──
         const bg=this.add.graphics()
         bg.fillGradientStyle(0x000000,0x000000,0x030A05,0x030A05,1)
         bg.fillRect(0,0,W,H)
-        // Level background image
         if (this.textures.exists('levelBg')) {
           const bgImg=this.add.image(W/2,H*0.32,'levelBg')
           bgImg.setDisplaySize(W,H*0.7)
           bgImg.setAlpha(0.35).setDepth(-1)
         }
-        // Stars
         for(let i=0;i<60;i++){
           const sx=Phaser.Math.Between(0,W), sy=Phaser.Math.Between(70,H*0.5)
           const star=this.add.circle(sx,sy,Math.random()<0.3?1.5:0.8,0xFFFFFF,0.4+Math.random()*0.5)
           this.tweens.add({targets:star,alpha:{from:0.2,to:0.9},duration:800+Math.random()*2000,yoyo:true,repeat:-1,ease:'Sine.easeInOut'})
         }
 
-        // ── Road ────────────────────────────────────────────────────────────
         const road=this.add.graphics()
         road.fillStyle(0x080F14,1)
         road.fillRect(40,0,W-80,H)
-        // Road surface sheen
         road.fillGradientStyle(0x39FF14,0x39FF14,0x003300,0x003300,0.04,0.04,0,0)
         road.fillRect(40,0,15,H)
         road.fillGradientStyle(0x003300,0x003300,0x39FF14,0x39FF14,0,0,0.04,0.04)
         road.fillRect(W-55,0,15,H)
 
-        // Road border glow lines
         const gl=this.add.graphics()
         gl.lineStyle(2,0x39FF14,0.6); gl.strokeRect(40,0,W-80,H)
         gl.lineStyle(1,0x004400,0.3); gl.beginPath(); gl.moveTo(42,0); gl.lineTo(42,H); gl.strokePath()
         gl.moveTo(W-42,0); gl.lineTo(W-42,H); gl.strokePath()
 
-        // Animated lane dashes
         for(let lane=1;lane<5;lane++){
           const lx=40+lane*((W-80)/5)
           for(let y=-60;y<H+60;y+=60){
@@ -473,27 +470,21 @@ export default function Game() {
           }
         }
 
-        // ── Player car — NO flat photo, composite visual ─────────────────────
         this.player = this.add.container(this.lanes[this.playerLane], H-90)
-        // Underbody glow - Deep gold + green
         const underGlow=this.add.ellipse(0,48,100,22,0x39FF14,0.3)
         const underGlow2=this.add.ellipse(0,48,80,14,0xC8960C,0.4)
-        // Body masina - fara roti
         const bodyImg = this.add.image(0, 0, 'body')
         bodyImg.setDisplaySize(78, 118)
-        // Holo border - cyan + purple
         const holoGfx=this.add.graphics()
         const neonCol = parseInt((carStats.neon||'#00EAFF').replace('#',''),16)
         holoGfx.lineStyle(2,neonCol,0.35); holoGfx.strokeRect(-40,-60,80,120)
         holoGfx.lineStyle(1,0xa259ff,0.2); holoGfx.strokeRect(-35,-55,70,110)
         holoGfx.lineStyle(1,neonCol,0.15); holoGfx.strokeRect(-30,-50,60,100)
         holoGfx.lineStyle(1,0xFFD700,0.15); holoGfx.strokeRect(-30,-50,60,100)
-        // Engine glow - bright green
         const engGlow=this.add.circle(0,56,16,0x39FF14,0.8)
         const engGlow2=this.add.circle(0,56,24,0x00FF00,0.2)
         this.tweens.add({targets:engGlow,alpha:{from:0.4,to:1},scaleX:{from:0.7,to:1.2},scaleY:{from:0.7,to:1.2},duration:150,yoyo:true,repeat:-1})
         this.tweens.add({targets:engGlow2,alpha:{from:0.1,to:0.4},scaleX:{from:0.8,to:1.4},duration:300,yoyo:true,repeat:-1})
-        // Speed lines - gold + green
         const spd=this.add.graphics()
         spd.lineStyle(2,0xFFD700,0.7); spd.beginPath()
         spd.moveTo(-18,-62); spd.lineTo(-18,-88)
@@ -504,7 +495,6 @@ export default function Game() {
         spd.moveTo(8,-62); spd.lineTo(8,-95)
         spd.moveTo(0,-62); spd.lineTo(0,-98)
         spd.strokePath()
-        // Gold shimmer corners
         const corners=this.add.graphics()
         corners.lineStyle(2,0xC8960C,0.9)
         corners.beginPath()
@@ -513,33 +503,26 @@ export default function Game() {
         corners.moveTo(-40,40); corners.lineTo(-40,60); corners.lineTo(-20,60)
         corners.moveTo(40,40); corners.lineTo(40,60); corners.lineTo(20,60)
         corners.strokePath()
-        // Iridescent shimmer dots
         const sh1=this.add.circle(-30,-30,3,0xa259ff,0.8)
         const sh2=this.add.circle(30,-30,3,0x00eaff,0.7)
         const sh3=this.add.circle(-30,30,3,0xff6ec7,0.6)
         const sh4=this.add.circle(30,30,3,0xFFE566,0.7)
         this.tweens.add({targets:[sh1,sh2,sh3,sh4],alpha:{from:0.2,to:1},duration:600+Math.random()*400,yoyo:true,repeat:-1})
-        // Mitraliera gold
         const gunImg = this.add.image(0, -60, 'machinegun')
         gunImg.setDisplaySize(20, 26)
         gunImg.setTint(0xFFD700)
         this.player.add([underGlow2,underGlow,bodyImg,holoGfx,corners,engGlow2,engGlow,spd,sh1,sh2,sh3,sh4,gunImg])
-        // Aplic upgrade lives + shield
         this.lives = 3 + extraLives
         if(shieldGenLv > 0) { this.shield = true; this.activateShield() }
 
-        // ── Character portrait (3D framed) ──────────────────────────────────
         const cpx=W-48, cpy=H-70
         const cpBg=this.add.graphics()
         cpBg.fillStyle(0x050A0E,0.95); cpBg.fillRect(cpx-38,cpy-50,76,90)
-        // Triple border: gold / purple / cyan
         cpBg.lineStyle(2,0xC8960C,0.9); cpBg.strokeRect(cpx-38,cpy-50,76,90)
         cpBg.lineStyle(1,0xa259ff,0.5); cpBg.strokeRect(cpx-35,cpy-47,70,84)
         cpBg.lineStyle(1,0x00EAFF,0.3); cpBg.strokeRect(cpx-32,cpy-44,64,78)
         const charPortrait=this.add.image(cpx,cpy,'char').setDisplaySize(66,82)
-        // Iridescent shimmer tween
         this.tweens.add({targets:charPortrait,tint:{from:0xFFFFFF,to:0xa259ff},duration:2000,yoyo:true,repeat:-1,ease:'Sine.easeInOut'})
-        // Name tag below portrait
         this.add.text(cpx,cpy+50,char.name.split(' ')[0],{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'#00EAFF'}).setOrigin(0.5)
 
         // Groups
@@ -548,13 +531,14 @@ export default function Game() {
         this.enemyLasers = this.add.group()
         this.obstacles   = this.add.group()
         this.coinGroup   = this.add.group()
+        this.airplaneGroup = this.add.group()   // ── NOU
+        this.airplaneBombs = this.add.group()  // ── NOU
 
-        // Controls
+        // ── FIX: Controls - keyN creat o singura data in create() ──
         this.cursors=this.input.keyboard!.createCursorKeys()
         this.wasd=this.input.keyboard!.addKeys('W,A,S,D')
-        this.keyN=this.input.keyboard!.addKey('N')
+        this.keyN=this.input.keyboard!.addKey('N')  // ── FIX
 
-        // ── HUD top bar ──────────────────────────────────────────────────────
         const hud=this.add.graphics()
         hud.fillStyle(0x000000,0.88); hud.fillRect(0,0,W,70)
         hud.lineStyle(1,0xC8960C,0.6); hud.strokeRect(0,0,W,70)
@@ -564,7 +548,6 @@ export default function Game() {
         this.scoreText=this.add.text(10,8,'SCORE: 0',ts)
         this.livesText=this.add.text(10,26,'❤ ❤ ❤',{fontFamily:'Orbitron,monospace',fontSize:'13px',color:'#FF2244'})
         this.coinsText=this.add.text(10,48,'COINS: 0',{fontFamily:'Orbitron,monospace',fontSize:'10px',color:'#FFD700'})
-        // ── PAUSE button ─────────────────────────────────────────────────────
         const pauseBtn=this.add.text(W-10,10,'⏸ PAUSE',{
           fontFamily:'Orbitron,monospace',fontSize:'10px',color:'#FFD700',
           backgroundColor:'#050A0E',padding:{x:8,y:4}
@@ -589,23 +572,19 @@ export default function Game() {
         }
         pauseBtn.on('pointerdown',this.togglePause)
         resumeBtn.on('pointerdown',this.togglePause)
-        // P key
         this.input.keyboard!.on('keydown-P',this.togglePause)
         this.add.text(W/2,6,char.name,{fontFamily:'Orbitron,monospace',fontSize:'9px',color:'#00EAFF'}).setOrigin(0.5,0)
         this.add.text(W/2,20,`BONUS ${char.coins}`,{fontFamily:'Orbitron,monospace',fontSize:'9px',color:'#39FF14'}).setOrigin(0.5,0)
         const lvName=this.levelConfig?.name?`${this.levelConfig.name} · LV1`:'LEVEL 1'
         this.levelText=this.add.text(W/2,36,lvName,{fontFamily:'Orbitron,monospace',fontSize:'10px',color:'#a259ff'}).setOrigin(0.5,0)
-        // NITRO BAR
         const nitroLabel=this.add.text(8,H-38,'NITRO',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'#00EAFF'}).setDepth(10)
         void nitroLabel
         this.add.rectangle(90,H-32,160,10,0x050A0E,0.9).setDepth(10).setStrokeStyle(1,0x00EAFF,0.6)
         ;(this as any).nitroBar=this.add.rectangle(12,H-32,0,8,0x00EAFF,1).setDepth(10).setOrigin(0,0.5)
-        // FUEL BAR
         const fuelLabel=this.add.text(8,H-20,'FUEL',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'#FFD700'}).setDepth(10)
         void fuelLabel
         this.add.rectangle(90,H-14,160,10,0x050A0E,0.9).setDepth(10).setStrokeStyle(1,0xFFD700,0.6)
         ;(this as any).fuelBar=this.add.rectangle(12,H-14,160,8,0xFFD700,1).setDepth(10).setOrigin(0,0.5)
-        // N KEY hint
         this.add.text(W-8,56,'N = NITRO',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'rgba(0,234,255,0.4)'}).setOrigin(1,0).setDepth(10)
         this.add.text(W-8,8,'MOTO RUNNER',{fontFamily:'Orbitron,monospace',fontSize:'9px',color:'#BF5FFF'}).setOrigin(1,0)
         this.add.text(W-8,24,'← → MOVE',{fontFamily:'Orbitron,monospace',fontSize:'8px',color:'rgba(255,215,0,0.3)'}).setOrigin(1,0)
@@ -613,19 +592,16 @@ export default function Game() {
         this.add.text(W-8,52,'↑↓ SPEED',{fontFamily:'Orbitron,monospace',fontSize:'7px',color:'rgba(0,234,255,0.3)'}).setOrigin(1,0)
       }
 
-      // ── Explosion: lightning bolts + particle coins ─────────────────────────
+      // ── Explosion ────────────────────────────────────────────────────────────
       spawnExplosion(x:number, y:number) {
         audio.sfx('obstacle')
         audio.sfx('thunder')
-
-        // Lightning bolts radiating out
         for(let i=0;i<8;i++){
           const angle=(i/8)*Math.PI*2
           const len=30+Phaser.Math.Between(10,40)
           const col=EXPLODE_COLORS[Phaser.Math.Between(0,EXPLODE_COLORS.length-1)]
           const gfx=this.add.graphics()
           gfx.lineStyle(2,col,1)
-          // Jagged lightning path
           let cx2=x, cy2=y
           for(let seg=0;seg<4;seg++){
             const nx=cx2+Math.cos(angle)*(len/4)+Phaser.Math.Between(-8,8)
@@ -635,17 +611,11 @@ export default function Game() {
           }
           this.tweens.add({targets:gfx,alpha:0,duration:350+Phaser.Math.Between(0,200),onComplete:()=>gfx.destroy()})
         }
-
-        // White flash
         const flash=this.add.circle(x,y,40,0xFFFFFF,0.9)
         this.tweens.add({targets:flash,alpha:0,scaleX:3,scaleY:3,duration:200,onComplete:()=>flash.destroy()})
-
-        // Glow ring
         const ring=this.add.circle(x,y,10,0x39FF14,0)
         ring.setStrokeStyle(3,0x39FF14,0.9)
         this.tweens.add({targets:ring,scaleX:5,scaleY:5,alpha:0,duration:400,onComplete:()=>ring.destroy()})
-
-        // Coin particles flying out
         const numCoins=Phaser.Math.Between(3,7)
         for(let i=0;i<numCoins;i++){
           const col=COIN_COLORS[Phaser.Math.Between(0,COIN_COLORS.length-1)]
@@ -660,29 +630,198 @@ export default function Game() {
             alpha:0, duration:900, ease:'Power2',
             onComplete:()=>container.destroy()
           })
-          // Coin value text
           const val=Phaser.Math.Between(2,8)
           const ct=this.add.text(x+vx*0.5,y-30,`+${val}`,{fontFamily:'Orbitron,monospace',fontSize:'9px',color:`#${col.toString(16).padStart(6,'0')}`})
           this.tweens.add({targets:ct,y:ct.y-40,alpha:0,duration:900,onComplete:()=>ct.destroy()})
         }
-
-        // Camera shake
         this.cameras.main.shake(300,0.02)
       }
 
-      // ── Sculpted enemy: logo as coin/token shape, NOT flat photo ────────────
+      // ── NOU: Spawn avion care traverseaza ecranul si lanseaza rachete/torpile ──
+      spawnAirplane() {
+        const W = this.scale.width
+        const H = this.scale.height
+        // Avionul apare din stanga sau dreapta, zboara la inaltime mica (sub HUD)
+        const fromLeft = Phaser.Math.Between(0,1) === 0
+        const yPos = Phaser.Math.Between(85, 160) // sus, sub HUD
+        const startX = fromLeft ? -120 : W + 120
+        const endX   = fromLeft ? W + 120 : -120
+        const facingRight = fromLeft
+
+        const planeContainer = this.add.container(startX, yPos)
+
+        // Verific daca imaginea e incarcata
+        const imgKey = this.textures.exists('airplane') ? 'airplane' : null
+
+        if (imgKey) {
+          // Imaginea reala din /plain/
+          const planeImg = this.add.image(0, 0, imgKey)
+          planeImg.setDisplaySize(110, 50)
+          if (!facingRight) planeImg.setFlipX(true)
+          planeContainer.add(planeImg)
+        } else {
+          // Fallback: avion desenat procedural (daca imaginea nu exista)
+          const pg = this.add.graphics()
+          // Fuselaj
+          pg.fillStyle(0x888888, 1)
+          pg.fillEllipse(0, 0, 90, 22)
+          // Aripi
+          pg.fillStyle(0xAAAAAA, 1)
+          pg.fillTriangle(-10, -2, 30, -28, 30, 2)  // aripa stanga sus
+          pg.fillTriangle(-10, 2, 30, 28, 30, -2)   // aripa dreapta jos
+          // Coada
+          pg.fillStyle(0x666666, 1)
+          pg.fillTriangle(-45, 0, -30, -18, -30, 0)
+          // Cabina - geam
+          pg.fillStyle(0x00EAFF, 0.8)
+          pg.fillEllipse(22, 0, 22, 12)
+          // Neon outline
+          pg.lineStyle(2, 0xFFD700, 0.9)
+          pg.strokeEllipse(0, 0, 90, 22)
+          if (!facingRight) pg.scaleX = -1
+          planeContainer.add(pg)
+        }
+
+        // Trail/exhaust din motoare
+        const exhaust = this.add.graphics()
+        exhaust.fillStyle(0xFF6600, 0.6)
+        const exX = facingRight ? -55 : 55
+        exhaust.fillEllipse(exX, 0, 20, 8)
+        planeContainer.add(exhaust)
+        this.tweens.add({targets: exhaust, alpha:{from:0.3,to:0.8}, scaleX:{from:0.5,to:1.5}, duration:80, yoyo:true, repeat:-1})
+
+        // Glow rosu sub avion - semnal pericol
+        const dangerGlow = this.add.graphics()
+        dangerGlow.lineStyle(2, 0xFF2244, 0.7)
+        dangerGlow.strokeEllipse(0, 0, 100, 40)
+        planeContainer.add(dangerGlow)
+        this.tweens.add({targets: dangerGlow, alpha:{from:0.2,to:0.9}, duration:200, yoyo:true, repeat:-1})
+
+        // Viteza avion
+        const speed = 280 + this.level * 20
+        const travelTime = (W + 240) / speed * 1000
+
+        ;(planeContainer as any).isAirplane = true
+        ;(planeContainer as any).facingRight = facingRight
+        ;(planeContainer as any).bombsDropped = 0
+        ;(planeContainer as any).maxBombs = Phaser.Math.Between(2, 4)
+        ;(planeContainer as any).bombInterval = Phaser.Math.Between(400, 900)
+        ;(planeContainer as any).bombTimer = 0
+        ;(planeContainer as any).active = true
+
+        this.airplaneGroup.add(planeContainer)
+        audio.sfx('plane')
+
+        // Mesaj warning
+        const warnTxt = this.add.text(
+          this.scale.width/2, 78,
+          '⚠ AIR STRIKE INCOMING ⚠',
+          {fontFamily:'Orbitron,monospace', fontSize:'10px', color:'#FF2244', stroke:'#000', strokeThickness:2}
+        ).setOrigin(0.5).setDepth(20)
+        this.tweens.add({targets:warnTxt, alpha:{from:0,to:1}, duration:150, yoyo:true, repeat:5,
+          onComplete:()=>warnTxt.destroy()})
+
+        // Tween zbor
+        this.tweens.add({
+          targets: planeContainer,
+          x: endX,
+          duration: travelTime,
+          ease: 'Linear',
+          onComplete: () => { planeContainer.destroy() }
+        })
+      }
+
+      // ── NOU: Spawn bomba/racheta din avion ──
+      spawnAirplaneBomb(planeX: number, planeY: number) {
+        const W = this.scale.width
+        // Bomba cade pe un lane random sau spre jucator
+        const targetLane = Phaser.Math.Between(0, 4)
+        const targetX = this.lanes[targetLane]
+
+        // Tip random: 0=racheta, 1=torpila, 2=bomba simpla
+        const bombType = Phaser.Math.Between(0, 2)
+
+        const bombContainer = this.add.container(planeX, planeY)
+
+        if (bombType === 0) {
+          // RACHETA - corp alungit cu foc la coada
+          const rg = this.add.graphics()
+          rg.fillStyle(0xFF4400, 1); rg.fillEllipse(0, 0, 10, 28)
+          rg.fillStyle(0xFFD700, 1); rg.fillTriangle(-5, -14, 5, -14, 0, -22)
+          rg.lineStyle(1, 0xFF2244, 0.8); rg.strokeEllipse(0, 0, 10, 28)
+          const fire = this.add.circle(0, 14, 5, 0xFF6600, 0.9)
+          const fire2 = this.add.circle(0, 18, 3, 0xFFFF00, 0.7)
+          bombContainer.add([rg, fire, fire2])
+          this.tweens.add({targets:[fire,fire2], scaleX:{from:0.5,to:1.5}, scaleY:{from:0.5,to:2}, alpha:{from:0.5,to:1}, duration:60, yoyo:true, repeat:-1})
+          ;(bombContainer as any).bombLabel = 'ROCKET'
+        } else if (bombType === 1) {
+          // TORPILA - corp argintiu cu elice
+          const tg = this.add.graphics()
+          tg.fillStyle(0xAAAAAA, 1); tg.fillEllipse(0, 0, 14, 34)
+          tg.fillStyle(0x888888, 1); tg.fillTriangle(-7, -17, 7, -17, 0, -26)
+          tg.lineStyle(1, 0x00EAFF, 0.7); tg.strokeEllipse(0, 0, 14, 34)
+          // Elice (spinner)
+          const elice = this.add.graphics()
+          elice.lineStyle(2, 0x00EAFF, 0.9)
+          elice.beginPath(); elice.moveTo(-8, 17); elice.lineTo(8, 17); elice.strokePath()
+          elice.beginPath(); elice.moveTo(0, 10); elice.lineTo(0, 24); elice.strokePath()
+          bombContainer.add([tg, elice])
+          this.tweens.add({targets:elice, angle:360, duration:200, repeat:-1, ease:'Linear'})
+          ;(bombContainer as any).bombLabel = 'TORPEDO'
+        } else {
+          // BOMBA SIMPLA - sfera cu countdown
+          const bg2 = this.add.circle(0, 0, 12, 0x222222, 1)
+          bg2.setStrokeStyle(2, 0xFF2244, 0.9)
+          const fuse = this.add.graphics()
+          fuse.lineStyle(2, 0xFFD700, 0.9); fuse.beginPath(); fuse.moveTo(0,-12); fuse.lineTo(4,-22); fuse.strokePath()
+          const sparkle = this.add.circle(4, -22, 3, 0xFFFF00, 0.9)
+          bombContainer.add([bg2, fuse, sparkle])
+          this.tweens.add({targets:sparkle, alpha:{from:0.2,to:1}, scaleX:{from:0.5,to:1.5}, duration:100, yoyo:true, repeat:-1})
+          ;(bombContainer as any).bombLabel = 'BOMB'
+        }
+
+        // Arata tipul pe scurt
+        const bombLbl = this.add.text(planeX, planeY - 20, (bombContainer as any).bombLabel||'', {
+          fontFamily:'Orbitron,monospace', fontSize:'8px', color:'#FF2244'
+        }).setOrigin(0.5).setDepth(15)
+        this.tweens.add({targets:bombLbl, alpha:0, y:bombLbl.y-20, duration:600, onComplete:()=>bombLbl.destroy()})
+
+        ;(bombContainer as any).speed = 4 + this.level * 0.3
+        ;(bombContainer as any).targetX = targetX
+        ;(bombContainer as any).isBomb = true
+        this.airplaneBombs.add(bombContainer)
+        audio.sfx('rocket')
+
+        // Shadow indicator pe strada
+        const shadow = this.add.ellipse(targetX, W/2, 30, 12, 0xFF2244, 0.3)
+        shadow.setDepth(5)
+        this.tweens.add({targets:shadow, alpha:{from:0.1,to:0.6}, scaleX:{from:0.5,to:1.2}, duration:200, yoyo:true, repeat:8, onComplete:()=>shadow.destroy()})
+
+        // Tween: cade spre targetX, accelerand
+        this.tweens.add({
+          targets: bombContainer,
+          x: targetX,
+          y: this.scale.height + 40,
+          duration: 1200 - this.level * 30,
+          ease: 'Quad.easeIn',
+          onComplete: () => {
+            // Explozie la impact cu strada (daca nu a lovit jucatorul)
+            if (bombContainer.active) {
+              this.spawnExplosion(bombContainer.x, bombContainer.y)
+              bombContainer.destroy()
+            }
+          }
+        })
+      }
+
+      // ── Enemy spawn ──────────────────────────────────────────────────────────
       spawnEnemy(lane:number) {
         const eData=ENEMY_IMGS[Phaser.Math.Between(0,ENEMY_IMGS.length-1)]
         const x=this.lanes[lane]
-
-        // Container-based enemy: hex ring + logo + animated aura
         const container=this.add.container(x,-60)
-
-        // Outer hex glow ring
         const aura=this.add.graphics()
         const auraCol=LASER_COLORS[Phaser.Math.Between(0,LASER_COLORS.length-1)]
         aura.lineStyle(3,auraCol,0.8)
-        // Draw hexagon
         const r=30
         aura.beginPath()
         for(let i=0;i<6;i++){
@@ -690,35 +829,23 @@ export default function Game() {
           i===0 ? aura.moveTo(Math.cos(a)*r,Math.sin(a)*r) : aura.lineTo(Math.cos(a)*r,Math.sin(a)*r)
         }
         aura.closePath(); aura.strokePath()
-
-        // Inner filled circle BG (dark)
         const bg2=this.add.circle(0,0,22,0x050A0E,0.95)
         bg2.setStrokeStyle(1,auraCol,0.5)
-
-        // Logo image
         const logo=this.add.image(0,0,`enemy_${eData.key}`)
         logo.setDisplaySize(34,34)
-
-        // Scanline overlay (gives depth/sculpt feel)
         const scan=this.add.graphics()
         for(let sy=-17;sy<17;sy+=3){
           scan.lineStyle(1,0x000000,0.25)
           scan.beginPath(); scan.moveTo(-17,sy); scan.lineTo(17,sy); scan.strokePath()
         }
-        // Extra inner glow ring for sculpted look
         const innerGlow=this.add.graphics()
         innerGlow.lineStyle(2,auraCol,0.4); innerGlow.strokeCircle(0,0,14)
-        // Iridescent shimmer
         const es1=this.add.circle(-8,-8,3,0xa259ff,0.5)
         const es2=this.add.circle(8,8,2,0x00eaff,0.4)
         const es3=this.add.circle(8,-8,2,0xff6ec7,0.3)
-        // White flash highlight (top-left)
         const highlight=this.add.circle(-10,-10,4,0xFFFFFF,0.15)
-
-        // HP pip
         const hp1=this.add.rectangle(-10,28,8,4,0x39FF14,0.9)
         const hp2=this.add.rectangle(2,28,8,4,0x39FF14,0.9)
-
         container.add([aura,bg2,logo,scan,innerGlow,es1,es2,es3,highlight,hp1,hp2])
         ;(container as any).hp=2
         ;(container as any).aura=aura
@@ -726,31 +853,22 @@ export default function Game() {
         ;(container as any).hp1=hp1
         ;(container as any).hp2=hp2
         ;(container as any).lane=lane
-
-        // Spin aura
         this.tweens.add({targets:aura,angle:360,duration:2000+Math.random()*1000,repeat:-1,ease:'Linear'})
-        // Pulse bg
         this.tweens.add({targets:bg2,scaleX:{from:0.95,to:1.05},scaleY:{from:0.95,to:1.05},duration:600,yoyo:true,repeat:-1})
-
         this.enemies.add(container)
       }
 
-      // ── Spawns ────────────────────────────────────────────────────────────
       spawnObstacle(lane:number) {
         const oData=OBSTACLE_IMGS[Phaser.Math.Between(0,OBSTACLE_IMGS.length-1)]
         const x=this.lanes[lane]
         const container=this.add.container(x,-70)
-
         const glow=this.add.circle(0,0,32,0xFF2244,0)
         glow.setStrokeStyle(2,0xFF2244,0.6)
         const img=this.add.image(0,0,oData.key).setDisplaySize(48,48)
-        // Warning triangle
         const warn=this.add.triangle(0,-40, -8,0, 8,0, 0,-14, 0xFFD700,0.8)
         this.tweens.add({targets:warn,alpha:{from:0.2,to:1},duration:300,yoyo:true,repeat:-1})
-        // Rotate slowly
         this.tweens.add({targets:img,angle:360,duration:4000,repeat:-1,ease:'Linear'})
         this.tweens.add({targets:glow,scaleX:{from:0.8,to:1.2},scaleY:{from:0.8,to:1.2},duration:500,yoyo:true,repeat:-1})
-
         container.add([glow,img,warn])
         ;(container as any).lane=lane
         this.obstacles.add(container)
@@ -759,53 +877,39 @@ export default function Game() {
       spawnCoin(lane:number) {
         const x=this.lanes[lane]
         const container=this.add.container(x,-20)
-        // Pick random MOTO coin image
         const coinKeys=['coin1','coin2','coin3','coin4','coin5','coin6','coin7','coin8']
         const ck=coinKeys[Phaser.Math.Between(0,coinKeys.length-1)]
-        // Outer green glow ring
         const glowRing=this.add.graphics()
         glowRing.lineStyle(4,0x39FF14,0.5); glowRing.strokeCircle(0,0,16)
         const glowRing2=this.add.graphics()
         glowRing2.lineStyle(2,0x00FF00,0.25); glowRing2.strokeCircle(0,0,22)
-        // Gold ring
         const goldRing=this.add.graphics()
         goldRing.lineStyle(2,0xFFD700,0.9); goldRing.strokeCircle(0,0,13)
-        // Dark bg circle
         const bgCircle=this.add.circle(0,0,12,0x050A0E,0.95)
-        // Coin logo image
         const img=this.add.image(0,0,ck)
         img.setDisplaySize(20,20)
-        // Iridescent shimmer dots
         const sh1=this.add.circle(-5,-5,2,0xa259ff,0.7)
         const sh2=this.add.circle(4,4,1.5,0x00eaff,0.6)
         const sh3=this.add.circle(5,-3,1,0xff6ec7,0.5)
         container.add([glowRing2,glowRing,goldRing,bgCircle,img,sh1,sh2,sh3])
         ;(container as any).col=0xFFD700
-        // Pulse glow
         this.tweens.add({targets:glowRing,scaleX:{from:0.8,to:1.3},scaleY:{from:0.8,to:1.3},alpha:{from:0.3,to:0.9},duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'})
-        // Spin logo
         this.tweens.add({targets:img,angle:360,duration:1800,repeat:-1,ease:'Linear'})
-        // Shimmer cycle
         this.tweens.add({targets:[sh1,sh2,sh3],alpha:{from:0.2,to:1},duration:400+Math.random()*300,yoyo:true,repeat:-1})
         this.coinGroup.add(container)
       }
 
-
       spawnSupplyDrop() {
         const lane = Phaser.Math.Between(0, 4)
         const x = this.lanes[lane]
-        const type = Phaser.Math.Between(0, 2) // 0=viata 1=shield 2=magnet
+        const type = Phaser.Math.Between(0, 2)
         const colors = [0x39FF14, 0x00EAFF, 0xa259ff]
         const col = colors[type]
         const container = this.add.container(x, -80)
-
-        // Parasuta imagine reala
         const chuteImg = this.add.image(0, -45, 'parasuta')
         chuteImg.setDisplaySize(70, 65)
-        // Glow pe parasuta
         const chuteGlow = this.add.graphics()
         chuteGlow.lineStyle(2, 0xFFD700, 0.6); chuteGlow.strokeEllipse(0, -45, 72, 50)
-        // Corzi de la parasuta la box
         const chuteGfx = this.add.graphics()
         chuteGfx.lineStyle(1, 0x39FF14, 0.8)
         chuteGfx.beginPath()
@@ -813,11 +917,8 @@ export default function Game() {
         chuteGfx.moveTo(20, -20); chuteGfx.lineTo(0, 10)
         chuteGfx.moveTo(0, -18); chuteGfx.lineTo(0, 10)
         chuteGfx.strokePath()
-
-        // Box supply - dark bg
         const boxBg = this.add.rectangle(0, 14, 28, 24, 0x050A0E, 0.95)
         boxBg.setStrokeStyle(2, col, 1)
-        // Gold corners
         const corners = this.add.graphics()
         corners.lineStyle(2, 0xFFD700, 0.9)
         corners.beginPath()
@@ -826,30 +927,21 @@ export default function Game() {
         corners.moveTo(-14, 32); corners.lineTo(-14, 26); corners.lineTo(-6, 26)
         corners.moveTo(14, 32); corners.lineTo(14, 26); corners.lineTo(6, 26)
         corners.strokePath()
-        // Supply image
         const imgKey = Phaser.Math.Between(0,1) === 0 ? 'supply1' : 'supply2'
         const supImg = this.add.image(0, 14, imgKey).setDisplaySize(22, 20)
-        // Glow ring
         const glowRing = this.add.graphics()
         glowRing.lineStyle(3, col, 0.6); glowRing.strokeCircle(0, 14, 18)
-        // Iridescent shimmer
         const sh1 = this.add.circle(-8, 8, 2, 0xa259ff, 0.7)
         const sh2 = this.add.circle(8, 8, 2, 0x00eaff, 0.6)
         const sh3 = this.add.circle(0, 20, 1.5, 0xff6ec7, 0.5)
-
         container.add([chuteImg, chuteGlow, chuteGfx, glowRing, boxBg, corners, supImg, sh1, sh2, sh3])
         ;(container as any).supplyType = type
         ;(container as any).isSupply = true
-
-        // Animatii
         this.tweens.add({targets: glowRing, scaleX:{from:0.8,to:1.3}, scaleY:{from:0.8,to:1.3}, alpha:{from:0.4,to:1}, duration:600, yoyo:true, repeat:-1})
         this.tweens.add({targets:[sh1,sh2,sh3], alpha:{from:0.2,to:1}, duration:400, yoyo:true, repeat:-1})
-        // Legana parasuta
         this.tweens.add({targets: container, angle:{from:-5,to:5}, duration:1200, yoyo:true, repeat:-1, ease:'Sine.easeInOut'})
-
         this.obstacles.add(container)
       }
-
 
       activateShield() {
         if(this.shieldGfx) this.shieldGfx.destroy()
@@ -875,134 +967,9 @@ export default function Game() {
             alpha:0, scaleX:0, scaleY:0, duration:500+Math.random()*300,
             onComplete:()=>p.destroy()})
         }
-        // Gold ring burst
         const ring=this.add.graphics()
         ring.lineStyle(3,0xFFD700,0.9); ring.strokeCircle(x,y,10)
         this.tweens.add({targets:ring,scaleX:4,scaleY:4,alpha:0,duration:400,onComplete:()=>ring.destroy()})
-      }
-
-
-      spawnPlane() {
-        if(this.planeActive) return
-        this.planeActive = true
-        const W = this.scale.width
-        const fromLeft = Math.random() > 0.5
-        const startX = fromLeft ? -80 : W + 80
-        const endX   = fromLeft ? W + 80 : -80
-        const planeY  = Phaser.Math.Between(80, 180)
-
-        // Container avion
-        const container = this.add.container(startX, planeY)
-        const planeImg = this.add.image(0, 0, 'plain')
-        planeImg.setDisplaySize(80, 50)
-        if(!fromLeft) planeImg.setFlipX(true)
-
-        // Glow sub avion
-        const glow = this.add.graphics()
-        glow.lineStyle(2, 0x00EAFF, 0.6); glow.strokeEllipse(0, 20, 60, 15)
-        // Trails de motor
-        const trail = this.add.graphics()
-        trail.lineStyle(3, 0xFF6EC7, 0.7)
-        trail.beginPath()
-        if(fromLeft) {
-          trail.moveTo(-30, -5); trail.lineTo(-60, -5)
-          trail.moveTo(-30, 5);  trail.lineTo(-55, 5)
-        } else {
-          trail.moveTo(30, -5);  trail.lineTo(60, -5)
-          trail.moveTo(30, 5);   trail.lineTo(55, 5)
-        }
-        trail.strokePath()
-        container.add([glow, trail, planeImg])
-        container.setDepth(5)
-        ;(this as any).planeObj = container
-
-        // Text warning
-        const warn = this.add.text(W/2, planeY - 40, '⚠ AIRSTRIKE INCOMING ⚠', {
-          fontFamily:'Orbitron,monospace', fontSize:'11px', color:'#FF2244',
-          stroke:'#000', strokeThickness:3
-        }).setOrigin(0.5).setDepth(10)
-        this.tweens.add({targets:warn, alpha:{from:0,to:1}, duration:200, yoyo:true, repeat:4,
-          onComplete:()=>warn.destroy()})
-
-        // Zbor avion
-        this.tweens.add({
-          targets: container,
-          x: endX,
-          duration: 3500,
-          ease: 'Linear',
-          onComplete: () => {
-            container.destroy()
-            this.planeActive = false
-          }
-        })
-
-        // Pulse trail
-        this.tweens.add({targets: trail, alpha:{from:0.3,to:1}, duration:200, yoyo:true, repeat:-1})
-
-        // Arunca 3 rachete/torpile in timp ce zboara
-        let bombCount = 0
-        const bombTimer = this.time.addEvent({
-          delay: 800,
-          repeat: 2,
-          callback: () => {
-            if(!container.active) return
-            bombCount++
-            const bx = container.x
-            const by = container.y + 25
-            // Racheta/torpila vizuala
-            const bomb = this.add.container(bx, by)
-            const bg = this.add.graphics()
-            // Corp torpila
-            bg.fillStyle(0xC8960C, 1); bg.fillEllipse(0, 0, 14, 30)
-            bg.fillStyle(0xFFD700, 1); bg.fillEllipse(0, -12, 8, 10)
-            bg.fillStyle(0xFF2244, 1); bg.fillTriangle(-5, 8, 5, 8, 0, 16)
-            // Glow
-            const bg2 = this.add.circle(0, 0, 10, 0xFF6600, 0.4)
-            // Fum trail
-            const smoke = this.add.graphics()
-            smoke.fillStyle(0xFFFFFF, 0.3); smoke.fillCircle(0, -18, 5)
-            bomb.add([bg2, bg, smoke])
-            bomb.setDepth(6)
-            ;(bomb as any).isPlaneBomb = true
-
-            // Trail de fum animat
-            this.tweens.add({targets:smoke, alpha:{from:0.1,to:0.5}, scaleX:{from:0.5,to:1.5}, duration:150, yoyo:true, repeat:-1})
-
-            // Cade drept in jos
-            this.tweens.add({
-              targets: bomb,
-              y: this.scale.height + 50,
-              duration: 1200,
-              ease: 'Power1',
-              onUpdate: () => {
-                // Verifica coliziune cu player
-                if(!bomb.active) return
-                if(Math.abs(bomb.x - this.player.x) < 35 && Math.abs(bomb.y - this.player.y) < 35) {
-                  this.spawnExplosion(bomb.x, bomb.y)
-                  bomb.destroy()
-                  if(this.shield){
-                    this.shield=false
-                    if(this.shieldGfx){this.shieldGfx.destroy();this.shieldGfx=null}
-                    audio.sfx('coin')
-                  } else {
-                    this.lives--
-                    this.livesText.setText('❤️'.repeat(Math.max(0,this.lives)))
-                    if(this.lives<=0) this.endGame()
-                    else { this.cameras.main.shake(300,0.025); audio.sfx('hit') }
-                  }
-                }
-              },
-              onComplete: () => {
-                if(bomb.active) {
-                  // Explozie la impact cu solul
-                  this.spawnExplosion(bomb.x, this.scale.height - 30)
-                  bomb.destroy()
-                }
-              }
-            })
-          }
-        })
-        void bombCount; void bombTimer
       }
 
       update(_t:number, delta:number) {
@@ -1016,7 +983,6 @@ export default function Game() {
           this.level=newLevel
           this.levelText.setText(`LEVEL ${this.level}`)
           this.levelText.setColor(this.level>5?'#FF6EC7':this.level>3?'#FF2244':'#a259ff')
-          // Level up flash
           const lf=this.add.text(this.scale.width/2,this.scale.height/2,`LEVEL ${this.level}!`,{fontFamily:'Orbitron,monospace',fontSize:'28px',color:'#FFD700',stroke:'#000',strokeThickness:4}).setOrigin(0.5)
           this.tweens.add({targets:lf,y:lf.y-80,alpha:0,duration:1200,onComplete:()=>lf.destroy()})
         }
@@ -1030,7 +996,6 @@ export default function Game() {
           if(this.playerLane<4) this.playerLane++
           touchInput.current.right=false
         }
-        // Sageti sus/jos = viteza manuala
         if(this.cursors.up?.isDown||this.wasd.W?.isDown){
           this.speedMult=Math.min(2.5, this.speedMult+0.02)
         }
@@ -1039,49 +1004,41 @@ export default function Game() {
         }
         if(touchInput.current.pause){ touchInput.current.pause=false; this.togglePause() }
 
-        // NITRO - tasta N
+        // ── FIX: NITRO foloseste this.keyN (creat in create(), nu addKey in fiecare frame) ──
         if(Phaser.Input.Keyboard.JustDown(this.keyN) && this.nitroCooldown<=0 && !this.nitroActive){
           this.nitroActive=true; this.nitroTimer=3000; this.nitroCooldown=15000
           this.speedMult = carStats.turbo * 1.5
           audio.sfx('nitro')
-          // Flash neon
           const nf=this.add.rectangle(this.player.x,this.player.y,90,130,0x00EAFF,0.3)
           this.tweens.add({targets:nf,alpha:0,scaleX:2,scaleY:2,duration:400,onComplete:()=>nf.destroy()})
         }
         this.player.x=Phaser.Math.Linear(this.player.x,this.lanes[this.playerLane],0.18)
-        // Tilt usor - max 0.08 rad
         const dx = this.lanes[this.playerLane] - this.player.x
         const targetTilt = Math.max(-0.08, Math.min(0.08, dx * 0.004))
         this.player.rotation = Phaser.Math.Linear(this.player.rotation, targetTilt, 0.12)
 
-        // Auto shoot with colored lasers
+        // Auto shoot
         this.shootTimer+=delta
         const fireRate=Math.max(60,(220-this.level*20)*rapidFireBonus)
         if(this.shootTimer>fireRate){
           this.shootTimer=0
           audio.sfx('shoot')
           const col=LASER_COLORS[Phaser.Math.Between(0,LASER_COLORS.length-1)]
-          // Main bullet
           const b=this.add.container(this.player.x,this.player.y-55)
           const bGfx=this.add.graphics()
-          // Glont gold - varf bright, corp deep gold
           bGfx.fillStyle(0xFFE566,1); bGfx.fillEllipse(0,-16,6,10)
           bGfx.fillStyle(0xFFD700,1); bGfx.fillRect(-2,-12,5,14)
           bGfx.fillStyle(0xC8960C,1); bGfx.fillRect(-2,2,5,5)
           bGfx.fillStyle(0xB8860B,1); bGfx.fillRect(-1,7,3,3)
-          // Glow verde neon
           const bTip=this.add.circle(0,-16,5,0x39FF14,0.9)
           const bTip2=this.add.circle(0,-16,8,0x00FF00,0.3)
-          // Trail cyan
           const bTrail=this.add.graphics()
           bTrail.lineStyle(3,0x00EAFF,0.5); bTrail.beginPath(); bTrail.moveTo(0,0); bTrail.lineTo(0,20); bTrail.strokePath()
           bTrail.lineStyle(1,0xFFD700,0.3); bTrail.beginPath(); bTrail.moveTo(0,0); bTrail.lineTo(0,28); bTrail.strokePath()
           b.add([bTrail,bGfx,bTip2,bTip]);(b as any).col=col;(b as any).dmg=Math.ceil(1*warHeadBonus)
           this.bullets.add(b)
-          // Glow burst at gun
           const burst=this.add.circle(this.player.x,this.player.y-55,8,col,0.5)
           this.tweens.add({targets:burst,alpha:0,scaleX:3,scaleY:3,duration:100,onComplete:()=>burst.destroy()})
-          // Twin shot at higher levels
           if(this.level>=3||twinShotLv>=1){
             const cols=[0x00EAFF,0xa259ff]
             cols.forEach((c,idx)=>{
@@ -1096,7 +1053,6 @@ export default function Game() {
               this.bullets.add(b2)
             })
           }
-          // Triple at higher level
           if(this.level>=5){
             const b3=this.add.container(this.player.x,this.player.y-55)
             const g3=this.add.graphics(); g3.fillStyle(0xFF6EC7,1); g3.fillRect(-4,-14,8,28)
@@ -1119,12 +1075,47 @@ export default function Game() {
         this.coinTimer+=delta
         if(this.coinTimer>900){ this.coinTimer=0; this.spawnCoin(Phaser.Math.Between(0,4)) }
 
-        // Supply drop spawn
+        // Supply drop spawn (UN SINGUR BLOC - FIX)
         this.supplyTimer+=delta
         if(this.supplyTimer>Phaser.Math.Between(8000,15000)){
           this.supplyTimer=0
           this.spawnSupplyDrop()
         }
+
+        // ── NOU: Airplane spawn - din cand in cand ──
+        this.airplaneTimer+=delta
+        // Avionul apare la interval random intre 12s-25s, mai des la nivel mare
+        const airplaneInterval = Math.max(8000, 25000 - this.level * 1000)
+        if(this.airplaneTimer > airplaneInterval + Phaser.Math.Between(0, 5000)){
+          this.airplaneTimer=0
+          this.spawnAirplane()
+        }
+
+        // ── NOU: Update avioane - drop bombe periodic in timp ce zboara ──
+        this.airplaneGroup.getChildren().forEach((plane:any) => {
+          if(!plane.active) return
+          plane.bombTimer = (plane.bombTimer || 0) + delta
+          if(plane.bombsDropped < plane.maxBombs && plane.bombTimer > plane.bombInterval) {
+            plane.bombTimer = 0
+            plane.bombsDropped++
+            // Bombeaza doar daca avionul e pe ecran (nu in afara)
+            const W2 = this.scale.width
+            if(plane.x > 0 && plane.x < W2) {
+              this.spawnAirplaneBomb(plane.x, plane.y + 25)
+            }
+          }
+        })
+
+        // ── NOU: Update bombe avion - coliziune cu jucatorul ──
+        this.airplaneBombs.getChildren().forEach((bomb:any) => {
+          if(!bomb.active) return
+          // Coliziune cu jucatorul
+          if(Math.abs(bomb.x - this.player.x) < 30 && Math.abs(bomb.y - this.player.y) < 35) {
+            this.spawnExplosion(bomb.x, bomb.y)
+            bomb.destroy()
+            this.takeDamage()
+          }
+        })
 
         // Enemy lasers
         this.laserTimer+=delta
@@ -1141,7 +1132,7 @@ export default function Game() {
           })
         }
 
-        // Ambient lightning strike (visual only)
+        // Ambient lightning
         this.lightningTimer+=delta
         if(this.lightningTimer>Phaser.Math.Between(3000,7000)){
           this.lightningTimer=0
@@ -1158,13 +1149,6 @@ export default function Game() {
           audio.sfx('thunder')
         }
 
-        // PLANE spawn - din cand in cand
-        this.planeTimer+=delta
-        if(this.planeTimer > Phaser.Math.Between(18000,35000)){
-          this.planeTimer=0
-          if(this.level>=2) this.spawnPlane()
-        }
-
         // NITRO update
         if(this.nitroActive){
           this.nitroTimer-=delta
@@ -1174,24 +1158,21 @@ export default function Game() {
         const nitroFill = this.nitroActive ? 80 : Math.max(0, 80*(1-this.nitroCooldown/15000))
         if((this as any).nitroBar) (this as any).nitroBar.width = nitroFill
 
-        // FUEL update - scade in timp
+        // FUEL update
         this.fuelTimer+=delta
         if(this.fuelTimer>500){ this.fuelTimer=0; this.fuel=Math.max(0,this.fuel-0.5) }
         if((this as any).fuelBar) (this as any).fuelBar.width = (this.fuel/100)*80
-        // Fara fuel = viteza mai mica
         if(this.fuel<=0) this.speedMult=Math.max(0.3,this.speedMult*0.99)
-        // Refuel din supply drop - adaugat mai jos
 
         // Combo decay
         if(this.combo>0){
           this.comboTimer+=delta
           if(this.comboTimer>2000){ this.combo=0; this.comboTimer=0 }
         }
-        // Power-up timers
         if(this.magnet){ this.magnetTimer-=delta; if(this.magnetTimer<=0){ this.magnet=false } }
         if(this.doubleScore){ this.doubleTimer-=delta; if(this.doubleTimer<=0){ this.doubleScore=false } }
 
-        // Update engine sound
+        // Engine sound
         this.engSpeed = Math.min(this.maxEngSpeed, this.engSpeed + (this.isAccel?2:0) - (!this.isAccel?1:0))
         this.engSpeed = Math.max(0, this.engSpeed)
         this.isAccel = !!(touchInput.current.left||touchInput.current.right||this.cursors?.left?.isDown||this.cursors?.right?.isDown)
@@ -1206,14 +1187,12 @@ export default function Game() {
           if(this.magnet){
             this.coinGroup.getChildren().forEach((coin:any)=>{
               if(!coin.active) return
-              const dx=this.player.x-coin.x, dy=this.player.y-coin.y
-              const dist=Math.sqrt(dx*dx+dy*dy)
-              if(dist<magnetRange){ coin.x+=dx*0.08; coin.y+=dy*0.08 }
+              const dx2=this.player.x-coin.x, dy2=this.player.y-coin.y
+              const dist=Math.sqrt(dx2*dx2+dy2*dy2)
+              if(dist<magnetRange){ coin.x+=dx2*0.08; coin.y+=dy2*0.08 }
             })
           }
           if(b.y<70){b.destroy();return}
-
-          // vs enemies
           this.enemies.getChildren().forEach((e:any)=>{
             if(!e.active) return
             if(Math.abs(b.x-e.x)<32&&Math.abs(b.y-e.y)<32){
@@ -1243,8 +1222,6 @@ export default function Game() {
               }
             }
           })
-
-          // vs obstacles
           this.obstacles.getChildren().forEach((o:any)=>{
             if(!o.active) return
             if(Math.abs(b.x-o.x)<28&&Math.abs(b.y-o.y)<28){
@@ -1253,6 +1230,20 @@ export default function Game() {
               o.destroy()
               this.score+=20; setScore(this.score)
               this.scoreText.setText('SCORE: '+this.score)
+            }
+          })
+          // ── NOU: bullets pot distruge bombele avionului ──
+          this.airplaneBombs.getChildren().forEach((bomb:any)=>{
+            if(!bomb.active) return
+            if(Math.abs(b.x-bomb.x)<20&&Math.abs(b.y-bomb.y)<20){
+              b.destroy()
+              this.spawnExplosion(bomb.x,bomb.y)
+              bomb.destroy()
+              this.score+=30; setScore(this.score)
+              this.scoreText.setText('SCORE: '+this.score)
+              // Bonus text
+              const bt=this.add.text(bomb.x,bomb.y-20,`INTERCEPTED! +30`,{fontFamily:'Orbitron,monospace',fontSize:'8px',color:'#00EAFF',stroke:'#000',strokeThickness:2}).setOrigin(0.5)
+              this.tweens.add({targets:bt,y:bt.y-50,alpha:0,duration:800,onComplete:()=>bt.destroy()})
             }
           })
         })
@@ -1266,7 +1257,6 @@ export default function Game() {
             this.spawnExplosion(e.x,e.y); e.destroy(); this.takeDamage()
           }
         })
-
 
         // Enemy lasers move
         this.enemyLasers.getChildren().forEach((l:any)=>{
@@ -1285,18 +1275,6 @@ export default function Game() {
           if(!o.active) return
           o.y+=eSpeed*0.65
           if(o.y>H+80){o.destroy();return}
-          if((o as any).isSupply && Math.abs(o.x-this.player.x)<30&&Math.abs(o.y-this.player.y)<40){
-            const t=(o as any).supplyType
-            this.spawnSupplyEffect(o.x,o.y,t)
-            o.destroy()
-            if(t===0){ this.lives=Math.min(5,this.lives+1); this.livesText.setText('❤️'.repeat(this.lives)); this.fuel=Math.min(100,this.fuel+30); audio.sfx('coin') }
-            else if(t===1){ this.shield=true; this.activateShield() }
-            else if(t===2){ this.magnet=true; this.magnetTimer=8000; audio.sfx('coin') }
-            const slabels=['+LIFE','SHIELD','MAGNET']
-            const st=this.add.text(this.player.x,this.player.y-90,slabels[t],{fontFamily:'Orbitron,monospace',fontSize:'12px',color:'#FFD700',stroke:'#000',strokeThickness:3}).setOrigin(0.5)
-            this.tweens.add({targets:st,y:st.y-60,alpha:0,duration:1200,onComplete:()=>st.destroy()})
-            return
-          }
           if(Math.abs(o.x-this.player.x)<28&&Math.abs(o.y-this.player.y)<32){
             this.spawnExplosion(o.x,o.y); o.destroy(); this.takeDamage()
           }
@@ -1321,9 +1299,9 @@ export default function Game() {
       }
 
       takeDamage() {
-        if(this.shield){ this.shield=false; if(this.shieldGfx){this.shieldGfx.destroy();this.shieldGfx=null}; audio.sfx('coin'); return }
         this.lives--
-        this.livesText.setText('❤️'.repeat(Math.max(0,this.lives)) || '💀')
+        const h=['❤ ❤ ❤','❤ ❤','❤','💀']
+        this.livesText.setText(h[Math.max(0,3-this.lives)])
         this.cameras.main.shake(280,0.02)
         const f=this.add.rectangle(this.scale.width/2,this.scale.height/2,this.scale.width,this.scale.height,0xFF0000,0.3)
         this.tweens.add({targets:f,alpha:0,duration:350,onComplete:()=>f.destroy()})
@@ -1342,14 +1320,12 @@ export default function Game() {
         p.lineStyle(2,0xC8960C,0.9); p.strokeRect(W/2-155,H/2-120,310,270)
         p.lineStyle(1,0x39FF14,0.4); p.strokeRect(W/2-150,H/2-115,300,260)
         p.lineStyle(1,0xa259ff,0.3); p.strokeRect(W/2-145,H/2-110,290,250)
-
         this.add.text(W/2,H/2-90,'GAME OVER',{fontFamily:'Orbitron,monospace',fontSize:'26px',color:'#FF2244',stroke:'#000',strokeThickness:3}).setOrigin(0.5)
         this.add.text(W/2,H/2-50,`SCORE: ${this.score}`,{fontFamily:'Orbitron,monospace',fontSize:'15px',color:'#FFD700'}).setOrigin(0.5)
         this.add.text(W/2,H/2-25,`COINS: ${this.coinsCount}`,{fontFamily:'Orbitron,monospace',fontSize:'13px',color:'#39FF14'}).setOrigin(0.5)
         this.add.text(W/2,H/2+0,`LEVEL REACHED: ${this.level}`,{fontFamily:'Orbitron,monospace',fontSize:'11px',color:'#a259ff'}).setOrigin(0.5)
         this.add.text(W/2,H/2+20,char.name,{fontFamily:'Orbitron,monospace',fontSize:'10px',color:'#00EAFF'}).setOrigin(0.5)
         this.add.text(W/2,H/2+38,`BONUS ${char.coins} ACTIVE`,{fontFamily:'Orbitron,monospace',fontSize:'9px',color:'#FF6EC7'}).setOrigin(0.5)
-
         const btn=this.add.rectangle(W/2,H/2+80,180,40,0x000000,0).setInteractive()
         btn.setStrokeStyle(2,0x39FF14,0.9)
         this.add.text(W/2,H/2+80,'▶ PLAY AGAIN',{fontFamily:'Orbitron,monospace',fontSize:'12px',color:'#39FF14'}).setOrigin(0.5)
@@ -1362,7 +1338,6 @@ export default function Game() {
 
     const GW = Math.min(window.innerWidth, window.screen.width, 720)
     const GH = Math.min(window.innerHeight - 120, Math.round(GW * 900 / 720))
-    // Salveaza selCar in localStorage ca sa il citeasca GameScene
     localStorage.setItem('selCar', String(selCar))
     gameRef.current = new Phaser.Game({
       type: Phaser.AUTO,
@@ -1378,7 +1353,6 @@ export default function Game() {
     })
   }, [started])
 
-  // ── Selection Screen ─────────────────────────────────────────────────────────
   if (!started) {
     return (
       <div className="cyber-bg" style={{padding:'28px 20px',maxWidth:860,margin:'0 auto'}}>
@@ -1437,7 +1411,6 @@ export default function Game() {
           </div>
         </div>
 
-        {/* Selected preview */}
         <div style={{display:'flex',gap:16,marginBottom:24,padding:'12px 16px',border:'1px solid rgba(200,150,12,0.2)',background:'rgba(5,10,14,0.8)'}}>
           <img src={`/characters/${CHARACTERS[selChar].img}`} style={{width:48,height:64,objectFit:'cover',objectPosition:'top',border:'1px solid rgba(162,89,255,0.4)'}} onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
           <img src={`/cars/${CARS[selCar].img}`} style={{width:90,height:70,objectFit:'contain',alignSelf:'center',filter:'drop-shadow(0 0 10px #00EAFF) brightness(1.2)'}} onError={e=>{(e.target as HTMLImageElement).src='/cars/body.jpeg'}}/>
@@ -1454,7 +1427,7 @@ export default function Game() {
           <div style={{display:'flex',flexDirection:'column',gap:4,justifyContent:'center'}}>
             <div style={{fontFamily:'Orbitron,monospace',fontSize:7,color:'rgba(255,215,0,0.4)'}}>17 ENEMY TOKENS</div>
             <div style={{fontFamily:'Orbitron,monospace',fontSize:7,color:'rgba(57,255,20,0.4)'}}>4 ROAD OBSTACLES</div>
-            <div style={{fontFamily:'Orbitron,monospace',fontSize:7,color:'rgba(162,89,255,0.4)'}}>∞ LEVELS</div>
+            <div style={{fontFamily:'Orbitron,monospace',fontSize:7,color:'rgba(162,89,255,0.4)'}}>✈ AIR STRIKES</div>
           </div>
         </div>
 
@@ -1463,14 +1436,13 @@ export default function Game() {
             ▶ START GAME
           </button>
           <div style={{fontFamily:'Orbitron,monospace',fontSize:8,color:'rgba(255,215,0,0.2)',marginTop:12,letterSpacing:2}}>
-            ← → ARROWS / A D · AUTO FIRE · R RESTART · BIRDS & THUNDER INCLUDED
+            ← → ARROWS / A D · AUTO FIRE · N NITRO · R RESTART · AIR STRIKES INCLUDED
           </div>
         </div>
       </div>
     )
   }
 
-  // ── Game Screen ──────────────────────────────────────────────────────────────
   return (
     <div className="cyber-bg" style={{padding:'14px',display:'flex',flexDirection:'column',alignItems:'center'}}>
       <div style={{marginBottom:10,display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:720}}>
@@ -1486,7 +1458,6 @@ export default function Game() {
       </div>
       <div ref={containerRef} style={{border:'1px solid rgba(200,150,12,0.35)',boxShadow:'0 0 40px rgba(57,255,20,0.08)',width:'100%',maxWidth:720,touchAction:'manipulation'}}/>
 
-      {/* MOBILE TOUCH CONTROLS */}
       <div style={{display:('ontouchstart' in window)?'flex':'none',justifyContent:'space-between',alignItems:'center',width:'100%',maxWidth:720,marginTop:10,padding:'0 8px',userSelect:'none'}}>
         <button
           onTouchStart={(ev)=>{ ev.preventDefault(); touchInput.current.left=true }}
