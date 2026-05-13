@@ -63,11 +63,15 @@ const CONTROLLER_ABI = [
   { name: 'enterTournament', type: 'function', stateMutability: 'payable',
     inputs: [{ name: 'tokenId', type: 'uint256' }], outputs: [] },
   // ── Read ───────────────────────────────────────────────────────
+  // ── FIX: outputs cu nume explicite ca sa viem sa le returneze ca obiect ──
   { name: 'getPlayerStats',  type: 'function', stateMutability: 'view',
     inputs: [{ name: 'player', type: 'address' }],
-    outputs: [{ name: 'earned', type: 'uint256' }, { name: 'score', type: 'uint256' }] },
+    outputs: [
+      { name: 'earned', type: 'uint256' },
+      { name: 'score',  type: 'uint256' },
+    ]},
   { name: 'getSeasonScore',  type: 'function', stateMutability: 'view',
-    inputs: [{ name: 'player', type: 'address' }], outputs: [{ type: 'uint256' }] },
+    inputs: [{ name: 'player', type: 'address' }], outputs: [{ name: 'seasonScore', type: 'uint256' }] },
   { name: 'totalEarned',     type: 'function', stateMutability: 'view',
     inputs: [{ name: 'player', type: 'address' }], outputs: [{ type: 'uint256' }] },
   { name: 'totalBurned',     type: 'function', stateMutability: 'view',
@@ -160,7 +164,7 @@ export function useWeb3() {
     }
   }, [])
 
-  // ── Fetch balances (uses publicClient — no wallet needed) ──────
+  // ── Fetch balances ─────────────────────────────────────────────
   const fetchBalances = useCallback(async (address: Address) => {
     if (!address || typeof address !== 'string' || !address.startsWith('0x') || address.length !== 42) {
       console.warn('fetchBalances: invalid address', address); return
@@ -182,33 +186,26 @@ export function useWeb3() {
   // ── Connect ────────────────────────────────────────────────────
   const connect = useCallback(async () => {
     const provider = getProvider()
-    if (!provider) { 
+    if (!provider) {
       window.open('https://metamask.io/download/', '_blank')
-      toast('Install MetaMask', 'err'); return 
+      toast('Install MetaMask', 'err'); return
     }
-    // Focus current window so MetaMask popup appears here
     window.focus()
     setState(s => ({ ...s, loading: true }))
     try {
-      // Request accounts direct via provider - mai sigur
-      const accounts: string[] = await provider.request({ 
-        method: 'eth_requestAccounts'
-      })
+      const accounts: string[] = await provider.request({ method: 'eth_requestAccounts' })
       if (!accounts || accounts.length === 0) throw new Error('No accounts returned')
       const address = accounts[0] as Address
       if (!address || !address.startsWith('0x') || address.length !== 42) {
         throw new Error('Invalid address returned: ' + address)
       }
       const wc = buildWalletClient(provider)
-
-      // Check chain
       const chainIdHex: string = await provider.request({ method: 'eth_chainId' })
       let chainOk = parseInt(chainIdHex, 16) === 143
       if (!chainOk) {
         toast('Switching to Monad...', 'warn')
         chainOk = await switchToMonad(provider)
       }
-
       setWalletClient(wc)
       setState(s => ({ ...s, address, connected: true, chainOk, loading: false }))
       toast(`Connected: ${address.slice(0,6)}…${address.slice(-4)}`, 'ok')
@@ -219,7 +216,7 @@ export function useWeb3() {
     }
   }, [getProvider, buildWalletClient, switchToMonad, fetchBalances, toast])
 
-  // ── Sign Score via Cloudflare Worker ────────────────────────────
+  // ── Claim Reward ───────────────────────────────────────────────
   const claimReward = useCallback(async (score: number, nonce: number, signature: `0x${string}`) => {
     if (!walletClient || !state.address) { toast('Connect wallet first', 'err'); return }
     setState(s => ({ ...s, loading: true }))
@@ -234,12 +231,14 @@ export function useWeb3() {
       toast('Waiting for tx...', 'warn')
       await publicClient.waitForTransactionReceipt({ hash })
       toast('Reward claimed! 🎉', 'ok')
-      if (state.address && state.address.startsWith('0x') && state.address.length === 42) await fetchBalances(state.address)
+      if (state.address) await fetchBalances(state.address)
     } catch (e: any) {
       if (e.name === 'UserRejectedRequestError') toast('Rejected', 'warn')
       else toast('Claim failed: ' + (e.shortMessage || e.message || '?'), 'err')
     } finally { setState(s => ({ ...s, loading: false })) }
   }, [walletClient, state.address, fetchBalances, toast])
+
+  // ── Sign Score via Cloudflare Worker ──────────────────────────
   const signScore = useCallback(async (score: number): Promise<boolean> => {
     const address = state.address
     if (!address) { toast('Connect wallet first', 'err'); return false }
@@ -265,7 +264,8 @@ export function useWeb3() {
   // ── Disconnect ─────────────────────────────────────────────────
   const disconnect = useCallback(() => {
     setWalletClient(null)
-    setState(s => ({ ...s, address: null, connected: false, chainOk: false, balanceMOTO: '0', balanceMON: '0', balanceNFT: 0 }))
+    setState(s => ({ ...s, address: null, connected: false, chainOk: false,
+      balanceMOTO: '0', balanceMON: '0', balanceNFT: 0 }))
     toast('Disconnected', 'info')
   }, [toast])
 
@@ -278,29 +278,23 @@ export function useWeb3() {
       const price = await publicClient.readContract({
         address: CONTRACTS.MOTO_NFT, abi: NFT_ABI, functionName: 'MINT_PRICE',
       }) as bigint
-
       toast('Confirm mint in wallet...', 'warn')
       const hash = await walletClient.writeContract({
         address: CONTRACTS.MOTO_NFT, abi: NFT_ABI,
         functionName: 'publicMint',
         args: [model, color, rarity, character],
         value: price,
-        account: state.address,
-        chain: monad,
+        account: state.address, chain: monad,
       })
       toast('Minting NFT...', 'info')
       await publicClient.waitForTransactionReceipt({ hash })
       toast('NFT Minted! 🏍️', 'ok')
-      if (state.address && state.address.startsWith('0x') && state.address.length === 42) await fetchBalances(state.address)
+      if (state.address) await fetchBalances(state.address)
     } catch (e: any) {
       if (e.code === 4001 || e.name === 'UserRejectedRequestError') toast('Rejected by user', 'warn')
       else toast('Mint failed: ' + (e.shortMessage || e.message || '?'), 'err')
     } finally { setState(s => ({ ...s, loading: false })) }
   }, [walletClient, state.address, fetchBalances, toast])
-
-  // ── Claim reward ───────────────────────────────────────────────
-
-  // ── Sign score ─────────────────────────────────────────────────
 
   // ── Buy coins with MON ─────────────────────────────────────────
   const buyCoins = useCallback(async (monAmount: number, coinsAmount: number): Promise<boolean> => {
@@ -316,7 +310,7 @@ export function useWeb3() {
       toast(`Sending ${monAmount} MON...`, 'info')
       await publicClient.waitForTransactionReceipt({ hash })
       toast(`+${coinsAmount} coins added! 🪙`, 'ok')
-      if (state.address && state.address.startsWith('0x') && state.address.length === 42) await fetchBalances(state.address)
+      if (state.address) await fetchBalances(state.address)
       return true
     } catch (e: any) {
       if (e.name === 'UserRejectedRequestError') toast('Payment rejected', 'warn')
@@ -342,21 +336,58 @@ export function useWeb3() {
     } catch { toast('Failed to add token', 'err') }
   }, [getProvider, toast])
 
-  // ── Get player stats (read-only) ───────────────────────────────
+  // ── Get player stats ── FIX: destructurare corecta array→obiect ─
   const getPlayerStats = useCallback(async (address: Address) => {
     try {
-      const [stats, seasonScore, season] = await Promise.all([
-        publicClient.readContract({ address: CONTRACTS.GAME_CONTROLLER, abi: CONTROLLER_ABI, functionName: 'getPlayerStats', args: [address] }),
-        publicClient.readContract({ address: CONTRACTS.GAME_CONTROLLER, abi: CONTROLLER_ABI, functionName: 'getSeasonScore',  args: [address] }),
-        publicClient.readContract({ address: CONTRACTS.GAME_CONTROLLER, abi: CONTROLLER_ABI, functionName: 'currentSeason'              }),
-      ]) as any[]
+      const [rawStats, rawSeasonScore, rawSeason] = await Promise.all([
+        publicClient.readContract({
+          address: CONTRACTS.GAME_CONTROLLER,
+          abi: CONTROLLER_ABI,
+          functionName: 'getPlayerStats',
+          args: [address],
+        }),
+        publicClient.readContract({
+          address: CONTRACTS.GAME_CONTROLLER,
+          abi: CONTROLLER_ABI,
+          functionName: 'getSeasonScore',
+          args: [address],
+        }),
+        publicClient.readContract({
+          address: CONTRACTS.GAME_CONTROLLER,
+          abi: CONTROLLER_ABI,
+          functionName: 'currentSeason',
+        }),
+      ])
+
+      // viem returneaza array [earned, score] sau obiect {earned, score}
+      // Tratam ambele cazuri
+      let earned: bigint
+      let score: bigint
+
+      if (Array.isArray(rawStats)) {
+        // Array: [earned, score]
+        earned = rawStats[0] as bigint
+        score  = rawStats[1] as bigint
+      } else {
+        // Obiect: { earned, score }
+        const s = rawStats as any
+        earned = s.earned as bigint
+        score  = s.score  as bigint
+      }
+
+      const seasonScore = rawSeasonScore as bigint
+      const season      = rawSeason      as bigint
+
       return {
-        earned:      formatUnits(stats.earned, 18),
-        score:       stats.score.toString(),
+        earned:      parseFloat(formatUnits(earned, 18)).toFixed(2),
+        score:       score.toString(),
         seasonScore: seasonScore.toString(),
         season:      season.toString(),
       }
-    } catch (e) { console.warn('getPlayerStats', e); return null }
+    } catch (e) {
+      console.warn('getPlayerStats error:', e)
+      return null
+    }
   }, [])
 
   // ── Enter tournament ───────────────────────────────────────────
@@ -366,7 +397,8 @@ export function useWeb3() {
     try {
       toast('Fetching tournament fee...', 'info')
       const fee = await publicClient.readContract({
-        address: CONTRACTS.GAME_CONTROLLER, abi: CONTROLLER_ABI, functionName: 'tournamentFee' as any,
+        address: CONTRACTS.GAME_CONTROLLER, abi: CONTROLLER_ABI,
+        functionName: 'tournamentFee' as any,
       }) as bigint
       toast('Confirm entry in wallet...', 'warn')
       const hash = await walletClient.writeContract({
@@ -408,7 +440,7 @@ export function useWeb3() {
         fetchBalances(accounts[0])
       }
     }
-    const onChain = () => { /* chain changed - no reload needed */ }
+    const onChain = () => { /* chain changed */ }
     provider.on?.('accountsChanged', onAccounts)
     provider.on?.('chainChanged', onChain)
     return () => {
@@ -416,7 +448,6 @@ export function useWeb3() {
       provider.removeListener?.('chainChanged', onChain)
     }
   }, [])
-
 
   // ── Get Voting Power ───────────────────────────────────────────
   const getVotingPower = useCallback(async (address: Address): Promise<string> => {
